@@ -27,3 +27,9 @@ Everything under `public/` is the live site. This repository is the working copy
 - **6.8** (2026-10-02): New position-based OCR for both the classic SAP GUI and Fiori manifest
   screens. Fixed-name file with redirects. Includes the 2026-09-28 fixes (Excel logo, live notification
   preview, no `1)` numbering) and the fit-to-page print fix.
+
+## Working from work
+
+Ask Claude in the "Receiving Tools" project to make the change. Claude pushes a branch and opens a
+pull request. The preview address shows up on the pull request. Say "ship it" and Claude merges it,
+then the change goes live. No home PC is needed.
