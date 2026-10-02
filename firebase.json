@@ -56,6 +56,11 @@
         "type": 301
       },
       {
+        "source": "/gen-data.offspec.html",
+        "destination": "/Offspec-Generator.html",
+        "type": 301
+      },
+      {
         "source": "/Offspec-Generator.v*.html",
         "destination": "/Offspec-Generator.html",
         "type": 301
