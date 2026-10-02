@@ -28,6 +28,9 @@ Everything under `public/` is the live site. This repository is the working copy
 
 ## Version history
 
+- **6.9** (2026-10-02): The paste box is half the height, and the gap after the Gen-Data preview
+  is gone. The same paste box (ZSD64 text or screenshot) now also sits in Q Offspec mode, under
+  Generate / Clear.
 - **6.8** (2026-10-02): New position-based OCR for both the classic SAP GUI and Fiori manifest
   screens. Fixed-name file with redirects. Includes the 2026-09-28 fixes (Excel logo, live notification
   preview, no `1)` numbering) and the fit-to-page print fix.

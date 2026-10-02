@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Combined Off-Spec Generator v6.8</title>
+<title>Combined Off-Spec Generator v6.9</title>
 <style>
   :root{
     --accent:#26b0b0; --accent-d:#1f9595; --ink:#e8edf1; --mut:#9aa7b3;
@@ -274,7 +274,7 @@
 <body>
 <header class="app">
   <label class="modepick" title="Switch generator mode"><span>Tool</span><select id="toolMode"><option value="gen" selected>Gen-Data Off-Spec</option><option value="q">Q Offspec Generator</option></select></label>
-  <span class="badge">v6.8</span>
+  <span class="badge">v6.9</span>
   <a class="homelink" href="https://ec-receiving.web.app/dashboard.html" title="Receiving Tools home">&#8592; Receiving Tools</a>
   <div class="ocrbar ocr-indicator" id="ocrBar" role="status" aria-live="polite" title="PaddleOCR status">
     <span class="ocrcam">&#128247;</span>
@@ -351,12 +351,12 @@
 
   <aside class="phrase-panel card" id="phrasePanel" aria-label="Third tool panel">
     <div class="gen-paste-panel" id="genPastePanel">
-      <h2>Gen-Data Paste</h2>
+      <h2 id="pasteHeading">Gen-Data Paste</h2>
       <div class="paste-target" id="pasteTarget" tabindex="0" role="textbox" aria-label="Paste ZSD64 Snippet Here">
         <div class="pt-title" id="pasteTitle">Paste ZSD64 Snippet Here</div>
         <div class="pt-sub" id="pasteSub">Click here, then press <b>Ctrl+V</b>. Screenshot paste, text paste, and image drop are supported.</div>
       </div>
-      <div class="hint">Optional shortcut: paste the ZSD64 text or screenshot here to fill the Gen-Data header and issue information.</div>
+      <div class="hint" id="pasteHint">Optional shortcut: paste the ZSD64 text or screenshot here to fill the Gen-Data header and issue information.</div>
     </div>
     <div class="phrase-panel-head">
       <div class="phrase-title-block">
@@ -1623,8 +1623,8 @@ function autoQMiscLines(){
 function applyMode(){
   toolMode=$('toolMode').value; document.body.classList.toggle('qmode',toolMode==='q');
   $('qPanel').style.display=toolMode==='q'?'block':'none'; $('genIssueArea').style.display=toolMode==='q'?'none':'block';
-  $('pasteTitle').textContent=toolMode==='q'?'Paste Q Validation Table Here':'Paste ZSD64 Snippet Here';
-  $('pasteSub').innerHTML=toolMode==='q'?'Copy the Q table, click here, then press <b>Ctrl+V</b>. Text paste is preferred.':'Click here, then press <b>Ctrl+V</b>. Screenshot paste, text paste, and image drop are supported.';
+  $('pasteTitle').textContent='Paste ZSD64 Snippet Here';
+  $('pasteSub').innerHTML='Click here, then press <b>Ctrl+V</b>. Screenshot paste, text paste, and image drop are supported.';
   $('ocrStatus').textContent=toolMode==='q'?'Paste Q table':'Paste SAP screen';
   const ms=$('mapSummaryText'); if(ms)ms.textContent=toolMode==='q'?'Q mode uses Page / Line / Profile #':'Edit issue mappings (Section code / Waste Stream # / Amend phrase)';
   miscDirty=false; render();
@@ -4025,6 +4025,46 @@ body.qmode #qPanel{display:none!important}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',clean);else clean();
   setTimeout(clean,100);
   setTimeout(clean,500);
+})();
+</script>
+
+
+<style id="v6-9-paste-box-layout">
+/* 6.9: paste box at half height, no gap after the preview, and the same box in Q mode. */
+@media(min-width:1251px){
+  body:not(.qmode) main{grid-template-columns:420px fit-content(760px) minmax(300px,380px);justify-content:start}
+}
+body:not(.qmode) #genPastePanel .paste-target{min-height:105px!important;padding:10px 14px}
+#genPastePanel .paste-target .pt-title{font-size:17px;margin-bottom:3px}
+#genPastePanel .paste-target .pt-sub{font-size:12px}
+/* Q mode: the panel is moved into the left card, under Generate / Clear. */
+body.qmode main > section.card #genPastePanel{display:flex!important;flex-direction:column;gap:8px;margin-top:16px}
+body.qmode main > section.card #genPastePanel .paste-target{display:flex!important;width:100%;max-width:none;min-height:105px;margin:0;padding:10px 12px}
+</style>
+<script>
+/* 6.9: one paste box, placed per mode. Moving the element keeps its click/drop handlers,
+   and pastes on it reach the page-level handlers that already parse ZSD64 text and screenshots. */
+(function(){
+  function place(){
+    const panel=document.getElementById('genPastePanel');
+    const side=document.getElementById('phrasePanel');
+    const card=document.querySelector('main > section.card');
+    if(!panel||!side||!card)return;
+    const q=document.body.classList.contains('qmode');
+    if(q){
+      const anchor=card.querySelector('.actions');
+      if(panel.previousElementSibling!==anchor) anchor.after(panel);
+    }else if(panel.parentElement!==side){
+      side.prepend(panel);
+    }
+    const h=document.getElementById('pasteHeading'), hint=document.getElementById('pasteHint');
+    if(h) h.textContent=q?'Q Offspec Paste':'Gen-Data Paste';
+    if(hint) hint.textContent=q
+      ?'Optional shortcut: paste the ZSD64 text or screenshot here to fill Load Number, Sales Order, Manifest and Generator.'
+      :'Optional shortcut: paste the ZSD64 text or screenshot here to fill the Gen-Data header and issue information.';
+  }
+  new MutationObserver(place).observe(document.body,{attributes:true,attributeFilter:['class']});
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place);else place();
 })();
 </script>
 
