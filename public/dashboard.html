@@ -80,12 +80,6 @@ a { color: inherit; text-decoration: none; }
 .tab.active { color: var(--bg); background: var(--amber); font-weight: 600; }
 
 .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-.legacy-link {
-  font-family: var(--mono); font-size: 11px; color: var(--dim);
-  padding: 6px 11px; border: 1px solid var(--line);
-  border-radius: 6px; transition: all .12s; white-space: nowrap;
-}
-.legacy-link:hover { color: var(--ink); border-color: var(--muted); }
 
 /* ── Views ─────────────────────────────────────────────── */
 .view { display: none; flex: 1; min-height: 0; flex-direction: column; }
@@ -395,8 +389,7 @@ footer.site a:hover { color: var(--ink); }
 @media (max-width: 720px) {
   .hero h1 { font-size: 30px; }
   .brand .name small { display: none; }
-  .legacy-link { display: none; }
-  .home-inner { padding: 34px 18px 60px; }
+    .home-inner { padding: 34px 18px 60px; }
 }
 </style>
 </head>
@@ -417,8 +410,6 @@ footer.site a:hover { color: var(--ink); }
     <button class="tab"        data-tab="bookmarklets" onclick="showView('home'); scrollToSection('sec-bookmarklets')">Bookmarklets</button>
   </nav>
 
-  <div class="topbar-right">
-  </div>
 </div>
 
 <!-- ── Home ────────────────────────────────────────────── -->
@@ -645,7 +636,7 @@ function scrollToSection(elId) {
 // ── Announcements (Firebase-synced, admin-editable) ──────
 (function () {
   var COLLECTION = 'ui';
-  var DOC_ID = 'dashboardAnnouncement';   // separate from the legacy sidebar doc
+  var DOC_ID = 'dashboardAnnouncement';
   var PASSWORDS = ['bossnatalie', 'dfetter'];
   var EMPTY = 'No announcements right now.';
 
