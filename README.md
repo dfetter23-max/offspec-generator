@@ -15,12 +15,16 @@ Everything under `public/` is the live site. This repository is the working copy
 
 - One permanent address: `public/Offspec-Generator.html`. Versions are dotted (6.8, 6.9, ...)
   and shown only in the app's badge and page title. **Never rename the file.**
-- Old versioned addresses (`Offspec-Generator.v67.html`, `.v9.html`, any `.v*.html`) are
-  redirected to it in `firebase.json`, so old bookmarks keep working. Don't remove those redirects.
+- Old addresses (`Offspec-Generator.v67.html`, `.v9.html`, any `.v*.html`, and the older
+  `gen-data.offspec.html`) are redirected to it in `firebase.json`, so old bookmarks keep working. Don't remove those redirects.
 - The screenshot OCR parser (`manifest-ocr` v1.1) is inside the generator in the
   `<script id="manifest-ocr-v1">` block. `tools/manifest-ocr-lab.html` is a standalone test page
   with a copy of the same parser. Open it, paste SAP GUI or Fiori screenshots, and use Copy JSON
   to report misreads. If you change the parser, update both copies.
+
+## Archive
+
+`archive/` holds retired pages that are no longer deployed. Their old addresses redirect.
 
 ## Version history
 
