@@ -22,6 +22,12 @@ Everything under `public/` is the live site. This repository is the working copy
   with a copy of the same parser. Open it, paste SAP GUI or Fiori screenshots, and use Copy JSON
   to report misreads. If you change the parser, update both copies.
 
+## H-Codes bookmarklet
+
+The live install page is `public/hcode-export.html` (linked from the dashboard). Its drag button holds
+the bookmarklet code. The source pages live at the repo root (`hcodes_interactive_bookmarklet_v*.html`).
+To update it, copy the new `javascript:` link into the install page's drag button and update the version label.
+
 ## Archive
 
 `archive/` holds retired pages that are no longer deployed. Their old addresses redirect.
