@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>H/S Code PNG Bookmarklet (v5)</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:#f0f2f5;margin:0;padding:40px 20px;}
+.card{max-width:660px;margin:0 auto;background:#fff;border-radius:10px;padding:36px 40px;box-shadow:0 2px 12px rgba(0,0,0,.12);}
+h2{margin:0 0 6px;color:#1a1a1a;font-size:20px;}
+.subtitle{color:#666;font-size:14px;margin-bottom:28px;}
+.step{display:flex;gap:14px;margin-bottom:20px;align-items:flex-start;}
+.num{background:#1a73e8;color:#fff;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;flex-shrink:0;margin-top:2px;}
+.step-text{font-size:14px;color:#333;line-height:1.6;}
+.bm-wrap{margin:10px 0 4px;}
+a.bm{display:inline-block;padding:11px 20px;background:#1a73e8;color:#fff;border-radius:6px;font-size:14px;font-weight:bold;text-decoration:none;border:2px dashed #fff;outline:2px dashed #1a73e8;cursor:grab;user-select:none;}
+a.bm:hover{background:#1558b0;}
+.hint{font-size:12px;color:#888;margin-top:6px;}
+hr{border:none;border-top:1px solid #eee;margin:24px 0;}
+.note{font-size:12px;color:#555;background:#f8f8f8;border-radius:6px;padding:12px 14px;line-height:1.7;}
+code{background:#eee;padding:1px 5px;border-radius:3px;}
+.fix{font-size:12px;color:#fff;background:#c62828;border-radius:6px;padding:10px 14px;line-height:1.7;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <h2>&#128202; H/S Code PNG Report &#8212; Bookmarklet v5</h2>
+  <div class="subtitle">Generates a PNG image from any H Code PDF report page. Captures both H-codes and S-codes.</div>
+  <div class="fix">
+    <strong>v5 critical fix:</strong> Same y-coordinate on different PDF pages are unrelated &mdash; v4 was matching codes from <em>any</em> page to manifests on <em>any</em> page when their page-local y values happened to coincide. v5 now requires manifest and code to be on the same page. Also preserves literal <code>NA</code> values that some load reports type into the H Code column.
+  </div>
+  <div class="step">
+    <div class="num">1</div>
+    <div class="step-text">
+      <strong>Drag this button to your Chrome bookmarks bar:</strong>
+      <div class="bm-wrap">
+        <a class="bm" href="javascript:%28function%28%29%7B%0Avar%20PDFJS%3D%27https%3A%2F%2Fcdnjs.cloudflare.com%2Fajax%2Flibs%2Fpdf.js%2F3.11.174%2Fpdf.min.js%27%3B%0Avar%20WORKER%3D%27https%3A%2F%2Fcdnjs.cloudflare.com%2Fajax%2Flibs%2Fpdf.js%2F3.11.174%2Fpdf.worker.min.js%27%3B%0Afunction%20run%28%29%7B%0ApdfjsLib.GlobalWorkerOptions.workerSrc%3DWORKER%3B%0A%28async%20function%28%29%7Btry%7B%0Avar%20pdf%3Dawait%20pdfjsLib.getDocument%28%7Burl%3Alocation.href%7D%29.promise%3B%0A%0A%2F%2A%20----%20EXTRACT%20TEXT%20WITH%20COORDINATES%20%2B%20PAGE%20NUMBER%20----%0A%20%20%20v5%20fix%3A%20page-local%20coordinates%20from%20pdf.js%20mean%20y%20can%20collide%20across%20pages%2C%0A%20%20%20so%20we%20tag%20every%20token%20with%20its%20page%20and%20require%20a%20same-page%20match%20below.%20%2A%2F%0Avar%20allItems%3D%5B%5D%3B%0Afor%28var%20i%3D1%3Bi%3C%3Dpdf.numPages%3Bi%2B%2B%29%7B%0A%20%20var%20pg%3Dawait%20pdf.getPage%28i%29%3B%0A%20%20var%20c%3Dawait%20pg.getTextContent%28%29%3B%0A%20%20c.items.forEach%28function%28it%29%7B%0A%20%20%20%20var%20s%3Dit.str.trim%28%29%3B%0A%20%20%20%20if%28s%29%20allItems.push%28%7Bs%3As%2Cx%3Ait.transform%5B4%5D%2Cy%3Ait.transform%5B5%5D%2Cpage%3Ai%7D%29%3B%0A%20%20%7D%29%3B%0A%7D%0A%0A%2F%2A%20----%20FIND%20H%20CODE%20COLUMN%20X%20POSITION%20FROM%20HEADER%20----%0A%20%20%20The%20header%20repeats%20on%20every%20page%3B%20first%20occurrence%20is%20fine%20since%20x%20is%20the%0A%20%20%20same%20on%20every%20page%20in%20this%20report%20layout.%20%2A%2F%0Avar%20hColX%3Dnull%3B%0Afor%28var%20i%3D0%3Bi%3CallItems.length%3Bi%2B%2B%29%7B%0A%20%20if%28allItems%5Bi%5D.s%3D%3D%3D%27H%20Code%27%29%7BhColX%3DallItems%5Bi%5D.x%3Bbreak%3B%7D%0A%7D%0A%0A%2F%2A%20----%20PARSE%20MANIFEST%20ENTRIES%20USING%20COORDINATES%20----%0A%20%20%20v4%3A%20regex%20matches%20H-codes%20AND%20S-codes%20%28both%20live%20in%20the%20H%20Code%20column%29%0A%20%20%20v5%3A%20also%20matches%20literal%20%22NA%22%20%28sometimes%20typed%20into%20the%20column%20explicitly%29%20%2A%2F%0Avar%20manRe%3D%2F%5E%28%5Cw%2B%3F%29%28%5Cd%29%5C%2F%28%5Cd%2B%29%24%2F%3B%0Avar%20codeRe%3D%2F%5E%28%5BHS%5D%5BA-Z0-9%5D%2B%7CNA%29%24%2F%3B%0Avar%20mans%3D%7B%7D%2Cord%3D%5B%5D%3B%0Avar%20Y_TOL%3D3%3B%0Avar%20X_TOL%3D60%3B%0A%0Afor%28var%20ai%3D0%3Bai%3CallItems.length%3Bai%2B%2B%29%7B%0A%20%20var%20mm%3DallItems%5Bai%5D.s.match%28manRe%29%3B%0A%20%20if%28%21mm%29continue%3B%0A%20%20var%20base%3Dmm%5B1%5D%2Cline%3D%2Bmm%5B3%5D%3B%0A%20%20var%20rowY%3DallItems%5Bai%5D.y%3B%0A%20%20var%20rowPage%3DallItems%5Bai%5D.page%3B%0A%20%20var%20hcode%3D%27%27%3B%0A%20%20if%28hColX%21%3D%3Dnull%29%7B%0A%20%20%20%20for%28var%20j%3D0%3Bj%3CallItems.length%3Bj%2B%2B%29%7B%0A%20%20%20%20%20%20if%28j%3D%3D%3Dai%29continue%3B%0A%20%20%20%20%20%20%2F%2A%20v5%20fix%3A%20same-page%20match%20required%20%2A%2F%0A%20%20%20%20%20%20if%28allItems%5Bj%5D.page%21%3D%3DrowPage%29continue%3B%0A%20%20%20%20%20%20if%28Math.abs%28allItems%5Bj%5D.y-rowY%29%3CY_TOL%20%26%26%20Math.abs%28allItems%5Bj%5D.x-hColX%29%3CX_TOL%20%26%26%20codeRe.test%28allItems%5Bj%5D.s%29%29%7B%0A%20%20%20%20%20%20%20%20hcode%3DallItems%5Bj%5D.s%3B%0A%20%20%20%20%20%20%20%20break%3B%0A%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%7D%0A%20%20if%28%21mans%5Bbase%5D%29%7Bmans%5Bbase%5D%3D%7Bseen%3A%7B%7D%2Carr%3A%5B%5D%7D%3Bord.push%28base%29%3B%7D%0A%20%20if%28%21mans%5Bbase%5D.seen%5Bline%5D%29%7Bmans%5Bbase%5D.seen%5Bline%5D%3Dtrue%3Bmans%5Bbase%5D.arr.push%28%7Bbase%3Abase%2Cline%3Aline%2Ch%3Ahcode%7D%29%3B%7D%0A%7D%0A%0Aif%28%21ord.length%29%7Balert%28%27No%20manifest%20entries%20found.%27%29%3Breturn%3B%7D%0A%0A%2F%2A%20----%20RENDERING%20%28unchanged%20from%20v3%2Fv4%29%20----%20%2A%2F%0Avar%20MX%3D50%2CMY%3D40%2CCH%3D38%2CPG%3D28%2CMG%3D44%2CTH%3D40%2CTG%3D12%3B%0Avar%20COLS1%3D4%2CCW1%3D150%2CCOLS2%3D5%2CCW2%3D140%2CW%3DCOLS2%2ACW2%2BMX%2A2%3B%0Afunction%20blocksFor%28items%29%7Bvar%20s%3Ditems.slice%28%29.sort%28function%28a%2Cb%29%7Breturn%20a.line-b.line%3B%7D%29%3Bvar%20bl%3D%5B%5D%3Bvar%20f%3D%5B%5D%3Bfor%28var%20li%3D1%3Bli%3C%3D4%3Bli%2B%2B%29%7Bvar%20found%3Dnull%3Bfor%28var%20fi%3D0%3Bfi%3Cs.length%3Bfi%2B%2B%29%7Bif%28s%5Bfi%5D.line%3D%3D%3Dli%29%7Bfound%3Ds%5Bfi%5D%3Bbreak%3B%7D%7Dif%28found%29f.push%28found%29%3Belse%20f.push%28%7Bline%3Ali%2Ch%3A%27%27%2Cempty%3Afalse%2Cplaceholder%3Atrue%7D%29%3B%7Dbl.push%28%7Bitems%3Af%2Ccols%3ACOLS1%2Ccw%3ACW1%2Crows%3A1%7D%29%3Bvar%20maxL%3D0%3Bs.forEach%28function%28x%29%7Bif%28x.line%3EmaxL%29maxL%3Dx.line%3B%7D%29%3Bvar%20lookup%3D%7B%7D%3Bs.forEach%28function%28x%29%7Bif%28x.line%3E4%29lookup%5Bx.line%5D%3Dx%3B%7D%29%3Bfor%28var%20start%3D5%3Bstart%3C%3DmaxL%3Bstart%2B%3D10%29%7Bvar%20ch%3D%5B%5D%3Bfor%28var%20li%3Dstart%3Bli%3Cstart%2B10%3Bli%2B%2B%29%7Bif%28lookup%5Bli%5D%29ch.push%28lookup%5Bli%5D%29%3Belse%20if%28li%3C%3DmaxL%29ch.push%28%7Bline%3Ali%2Ch%3A%27%27%2Cempty%3Afalse%2Cplaceholder%3Atrue%7D%29%3Belse%20ch.push%28%7Bline%3Anull%2Ch%3A%27%27%2Cempty%3Atrue%7D%29%3B%7Dbl.push%28%7Bitems%3Ach%2Ccols%3ACOLS2%2Ccw%3ACW2%2Crows%3A2%7D%29%3B%7Dreturn%20bl%3B%7D%0A%0Avar%20totalH%3DMY%3Bord.forEach%28function%28b%29%7BtotalH%2B%3DTH%2BTG%3BblocksFor%28mans%5Bb%5D.arr%29.forEach%28function%28blk%29%7BtotalH%2B%3Dblk.rows%2ACH%2BPG%3B%7D%29%3BtotalH%2B%3DMG%3B%7D%29%3BtotalH%2B%3DMY%3B%0Avar%20cv%3Ddocument.createElement%28%27canvas%27%29%3Bcv.width%3DW%3Bcv.height%3DtotalH%3Bvar%20ctx%3Dcv.getContext%28%272d%27%29%3Bctx.fillStyle%3D%27%23fff%27%3Bctx.fillRect%280%2C0%2CW%2CtotalH%29%3B%0Avar%20y%3DMY%3Bord.forEach%28function%28b%29%7Bctx.fillStyle%3D%27%23000%27%3Bctx.font%3D%27bold%2028px%20Arial%2Csans-serif%27%3Bctx.fillText%28b%2CMX%2Cy%2B24%29%3By%2B%3DTH%2BTG%3BblocksFor%28mans%5Bb%5D.arr%29.forEach%28function%28blk%29%7Bfor%28var%20r%3D0%3Br%3Cblk.rows%3Br%2B%2B%29%7Bfor%28var%20c%3D0%3Bc%3Cblk.cols%3Bc%2B%2B%29%7Bvar%20idx%3Dr%2Ablk.cols%2Bc%2Ccx%3DMX%2Bc%2Ablk.cw%2Ccy%3Dy%2Br%2ACH%3Bctx.strokeStyle%3D%27%23555%27%3Bctx.lineWidth%3D0.8%3Bctx.strokeRect%28cx%2Ccy%2Cblk.cw%2CCH%29%3Bvar%20item%3Dblk.items%5Bidx%5D%3Bif%28item%26%26%21item.empty%26%26item.line%21%3D%3Dnull%29%7Bctx.font%3D%2713px%20Arial%2Csans-serif%27%3Bctx.fillStyle%3D%27%23000%27%3Bvar%20ls%3Ditem.line%2B%27.%20%27%3Bctx.fillText%28ls%2Ccx%2B10%2Ccy%2BCH%2F2%2B5%29%3Bvar%20lw%3Dctx.measureText%28ls%29.width%3Bif%28%21item.placeholder%29%7Bvar%20hv%3D%28item.h%26%26item.h%21%3D%3D%27WTA%27%29%3Fitem.h%3A%27N%2FA%27%3Bctx.font%3D%27bold%2018px%20Arial%2Csans-serif%27%3Bctx.fillStyle%3D%27%23000%27%3Bctx.fillText%28hv%2Ccx%2B10%2Blw%2Ccy%2BCH%2F2%2B5%29%3B%7D%7D%7D%7Dy%2B%3Dblk.rows%2ACH%2BPG%3B%7D%29%3By%2B%3DMG%3B%7D%29%3B%0A%0Acv.toBlob%28function%28blob%29%7Bvar%20burl%3DURL.createObjectURL%28blob%29%3Bvar%20png%3Dcv.toDataURL%28%27image%2Fpng%27%29%3Bvar%20html%3D%27%3C%21DOCTYPE%20html%3E%3Chtml%3E%3Chead%3E%3Cmeta%20charset%3D%22utf-8%22%3E%3Ctitle%3EH%2FS%20Codes%20Report%3C%2Ftitle%3E%3Cstyle%3Ebody%7Bmargin%3A0%3Bbackground%3A%23e8e8e8%3Bfont-family%3AArial%2Csans-serif%3B%7D.bar%7Bbackground%3A%231a73e8%3Bpadding%3A12px%2020px%3Bdisplay%3Aflex%3Balign-items%3Acenter%3Bgap%3A16px%3Bposition%3Asticky%3Btop%3A0%3Bz-index%3A9%7D.bar%20button%7Bpadding%3A8px%2018px%3Bbackground%3A%23fff%3Bcolor%3A%231a73e8%3Bborder-radius%3A5px%3Bfont-weight%3Abold%3Bfont-size%3A13px%3Bborder%3Anone%3Bcursor%3Apointer%3B%7D.bar%20button%3Ahover%7Bbackground%3A%23e8e8e8%3B%7D.bar%20span%7Bcolor%3A%23fff%3Bfont-size%3A15px%3Bfont-weight%3Abold%3B%7D.wrap%7Bpadding%3A24px%3Btext-align%3Acenter%3B%7Dimg%7Bbackground%3A%23fff%3Bborder%3A1px%20solid%20%23ccc%3Bbox-shadow%3A0%202px%208px%20rgba%280%2C0%2C0%2C.15%29%3Bmax-width%3A100%25%3B%7D%3C%2Fstyle%3E%3C%2Fhead%3E%3Cbody%3E%3Cdiv%20class%3D%22bar%22%3E%3Cspan%3E%26%23128202%3B%20H%2FS%20Codes%20Report%3C%2Fspan%3E%3Cbutton%20id%3D%22dlbtn%22%3E%26%2311015%3B%20Download%20PNG%3C%2Fbutton%3E%3C%2Fdiv%3E%3Cdiv%20class%3D%22wrap%22%3E%3Cimg%20src%3D%22%27%2Bpng%2B%27%22%3E%3C%2Fdiv%3E%3Cscript%3Edocument.getElementById%28%22dlbtn%22%29.addEventListener%28%22click%22%2Cfunction%28%29%7Bvar%20a%3Ddocument.createElement%28%22a%22%29%3Ba.href%3D%22%27%2Bburl%2B%27%22%3Ba.download%3D%22hs_codes_report.png%22%3Bdocument.body.appendChild%28a%29%3Ba.click%28%29%3BsetTimeout%28function%28%29%7Bdocument.body.removeChild%28a%29%3B%7D%2C500%29%3B%7D%29%3B%3C%5C%2Fscript%3E%3C%2Fbody%3E%3C%2Fhtml%3E%27%3Bvar%20hblob%3Dnew%20Blob%28%5Bhtml%5D%2C%7Btype%3A%27text%2Fhtml%27%7D%29%3Bvar%20hurl%3DURL.createObjectURL%28hblob%29%3Bwindow.open%28hurl%2C%27_blank%27%29%3B%7D%2C%27image%2Fpng%27%29%3B%0A%7Dcatch%28e%29%7Balert%28%27Error%3A%20%27%2Be.message%29%3B%7D%7D%29%28%29%3B%0A%7D%0Aif%28typeof%20pdfjsLib%21%3D%3D%27undefined%27%29run%28%29%3B%0Aelse%7Bvar%20s%3Ddocument.createElement%28%27script%27%29%3Bs.src%3DPDFJS%3Bs.onload%3Drun%3Bs.onerror%3Dfunction%28%29%7Balert%28%27Could%20not%20load%20PDF.js.%27%29%3B%7D%3Bdocument.head.appendChild%28s%29%3B%7D%0A%7D%29%28%29%3B%0A">&#128202; Export H/S Codes PNG</a>
+      </div>
+      <div class="hint">&#8593; Drag this blue button up to your bookmarks bar and drop it there.</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="step-text">Navigate to an <strong>H Code report PDF</strong> page (URL ending in <code>/$value</code>).</div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div class="step-text">Click <strong>&#128202; Export H/S Codes PNG</strong> in your bookmarks bar.<br>
+    A <strong>new tab</strong> opens with the report image and a <strong>Download PNG</strong> button.</div>
+  </div>
+  <hr>
+  <div class="note">
+    <strong>How it works:</strong><br>
+    &#8226; Extracts every text token <strong>with its x/y coordinates and page number</strong><br>
+    &#8226; Locates the &ldquo;H Code&rdquo; column header and records its x-position<br>
+    &#8226; For each manifest row, accepts a token whose page matches and whose x-position is within <strong>&plusmn;60 units</strong> of the header, matching <code>^([HS][A-Z0-9]+|NA)$</code><br>
+    &#8226; Truly empty cells &rarr; <strong>N/A</strong>; literal <code>NA</code> entries are kept verbatim<br>
+    &#8226; <code>WTA</code> still treated as N/A (unchanged)<br><br>
+    <strong>Layout rules (unchanged from v3):</strong><br>
+    &#8226; Lines 1&ndash;4 &rarr; 1 row &times; 4 columns<br>
+    &#8226; Lines 5&ndash;14, 15&ndash;24, etc. &rarr; 2 rows &times; 5 columns<br>
+    &#8226; Empty/padding cells &rarr; blank<br>
+    &#8226; Duplicate line numbers &rarr; first occurrence only
+  </div>
+</div>
+</body>
+</html>

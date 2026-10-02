@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF Joiner</title>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root{
+    --bg:#0f172a;
+    --panel:#162238;
+    --panel2:#1d2d47;
+    --text:#f8fafc;
+    --muted:#a8b3c5;
+    --accent:#38bdf8;
+    --accent2:#0ea5e9;
+    --good:#22c55e;
+    --danger:#ef4444;
+    --border:#334155;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:Segoe UI,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  .wrap{
+    width:min(920px,calc(100% - 28px));
+    margin:0 auto;
+    padding:28px 0 40px;
+  }
+  header{
+    display:flex;
+    justify-content:space-between;
+    align-items:end;
+    gap:16px;
+    margin-bottom:18px;
+  }
+  h1{margin:0;font-size:clamp(30px,5vw,48px);line-height:1}
+  .sub{color:var(--muted);margin-top:8px;font-size:16px}
+  .badge{
+    padding:8px 12px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    color:var(--muted);
+    font-size:13px;
+    white-space:nowrap;
+  }
+  .drop{
+    background:var(--panel);
+    border:3px dashed #475569;
+    border-radius:18px;
+    padding:42px 22px;
+    text-align:center;
+    cursor:pointer;
+    transition:.15s ease;
+    outline:none;
+  }
+  .drop:hover,.drop.dragover,.drop:focus{
+    border-color:var(--accent);
+    background:#172a43;
+  }
+  .dropIcon{font-size:50px;line-height:1;margin-bottom:14px}
+  .drop strong{display:block;font-size:23px;margin-bottom:7px}
+  .drop span{color:var(--muted)}
+  input[type=file]{display:none}
+
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+    margin:18px 0 10px;
+  }
+  .count{font-weight:700}
+  .hint{color:var(--muted);font-size:14px;margin-top:3px}
+  button{
+    font:inherit;
+    border:0;
+    border-radius:10px;
+    cursor:pointer;
+    min-height:44px;
+    padding:10px 15px;
+    font-weight:700;
+  }
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .secondary{
+    color:var(--text);
+    background:var(--panel2);
+    border:1px solid var(--border);
+  }
+  .danger{
+    color:#fff;
+    background:#7f1d1d;
+  }
+
+  #list{
+    display:grid;
+    gap:10px;
+    margin-top:12px;
+  }
+  .file{
+    display:grid;
+    grid-template-columns:46px minmax(0,1fr) auto;
+    align-items:center;
+    gap:12px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:12px;
+    border-radius:12px;
+  }
+  .file.dragging{opacity:.45}
+  .file.over{outline:2px solid var(--accent)}
+  .file.duplicate{
+    border-color:#f59e0b;
+    background:#2a2418;
+  }
+  .dupWarn{
+    color:#fbbf24;
+    font-size:12px;
+    font-weight:700;
+    margin-top:4px;
+  }
+  .handle{
+    width:46px;height:46px;
+    display:grid;place-items:center;
+    background:var(--panel2);
+    border-radius:9px;
+    font-size:21px;
+    cursor:grab;
+    user-select:none;
+  }
+  .name{
+    min-width:0;
+    font-weight:700;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .meta{
+    color:var(--muted);
+    font-size:13px;
+    margin-top:4px;
+  }
+  .actions{display:flex;gap:6px}
+  .mini{
+    min-width:42px;
+    padding:8px 10px;
+    background:var(--panel2);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .remove{color:#fecaca}
+  .empty{
+    color:var(--muted);
+    text-align:center;
+    padding:22px 10px;
+  }
+
+  .bottom{
+    position:sticky;
+    bottom:0;
+    margin-top:18px;
+    background:rgba(15,23,42,.94);
+    backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);
+    padding:14px 0 4px;
+  }
+  .joinRow{
+    display:flex;
+    gap:12px;
+    align-items:end;
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+  .loadField{
+    flex:1 1 260px;
+    max-width:360px;
+  }
+  .loadField label{
+    display:block;
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .loadField input{
+    width:100%;
+    min-height:50px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--panel);
+    color:var(--text);
+    padding:10px 12px;
+    font:inherit;
+    font-size:18px;
+    outline:none;
+  }
+  .loadField input:focus{
+    border-color:var(--accent);
+  }
+  .join{
+    width:auto;
+    min-width:220px;
+    min-height:50px;
+    padding:10px 24px;
+    border-radius:12px;
+    font-size:18px;
+    color:#00131d;
+    background:var(--accent);
+  }
+  .join:not(:disabled):hover{background:#7dd3fc}
+  .status{
+    min-height:24px;
+    text-align:center;
+    color:var(--muted);
+    margin-top:8px;
+    font-size:14px;
+  }
+  .status.good{color:#86efac}
+  .status.bad{color:#fca5a5}
+  .sendto{
+    margin-top:16px;
+    padding:12px 16px;
+    text-align:center;
+    font-size:14px;
+    color:var(--muted);
+    border:1px solid rgba(56,189,248,.35);
+    border-radius:10px;
+    background:rgba(56,189,248,.08);
+  }
+  .sendto strong{color:var(--accent)}
+  .sendto a{color:var(--accent);font-weight:600}
+  .privacy{
+    margin-top:20px;
+    text-align:center;
+    color:var(--muted);
+    font-size:12px;
+  }
+  @media(max-width:620px){
+    header{align-items:start;flex-direction:column}
+    .badge{display:none}
+    .file{grid-template-columns:42px minmax(0,1fr)}
+    .actions{grid-column:1/-1;justify-content:flex-end}
+    .handle{width:42px;height:42px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>PDF Joiner</h1>
+      <div class="sub">Put PDFs in the order you want. Then join them.</div>
+    </div>
+    <div class="badge">Files stay on this computer</div>
+  </header>
+
+  <div id="drop" class="drop" tabindex="0" role="button" aria-label="Add PDF files">
+    <div class="dropIcon">📄</div>
+    <strong>DROP PDF FILES HERE</strong>
+    <span>or click here to choose files</span>
+  </div>
+  <input id="picker" type="file" accept="application/pdf,.pdf" multiple>
+
+  <div class="toolbar">
+    <div>
+      <div id="count" class="count">0 PDFs selected</div>
+      <div class="hint">Drag files up or down to change the order.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button id="addBtn" class="secondary" type="button">+ Add More</button>
+      <button id="clearBtn" class="danger" type="button" disabled>Clear All</button>
+    </div>
+  </div>
+
+  <div id="list">
+    <div class="empty">No PDFs added yet.</div>
+  </div>
+
+  <div class="bottom">
+    <div class="joinRow">
+      <div class="loadField">
+        <label for="loadNumber">Load #</label>
+        <input id="loadNumber" type="text" inputmode="numeric" autocomplete="off" placeholder="Enter load number">
+      </div>
+      <button id="joinBtn" class="join" type="button" disabled>JOIN PDFs</button>
+    </div>
+    <div id="status" class="status" aria-live="polite"></div>
+  </div>
+
+  <div class="privacy">Nothing is uploaded. The PDFs are joined inside your browser.</div>
+
+  <div class="sendto">
+    <strong>Next step:</strong> Email the exported PDF to
+    <a href="mailto:usa.es.billingpackage@tradebe.com">usa.es.billingpackage@tradebe.com</a>
+    so the billing package can be processed.
+  </div>
+</div>
+
+<script>
+(() => {
+  const root = document;
+  const drop = root.getElementById('drop');
+  const picker = root.getElementById('picker');
+  const list = root.getElementById('list');
+  const count = root.getElementById('count');
+  const addBtn = root.getElementById('addBtn');
+  const clearBtn = root.getElementById('clearBtn');
+  const joinBtn = root.getElementById('joinBtn');
+  const loadNumber = root.getElementById('loadNumber');
+  const status = root.getElementById('status');
+
+  let files = [];
+  let draggedIndex = null;
+
+  const fmt = bytes => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/1048576).toFixed(1) + ' MB';
+  };
+
+  function setStatus(text, type=''){
+    status.textContent = text;
+    status.className = 'status' + (type ? ' ' + type : '');
+  }
+
+  function getDuplicateIndexes(){
+    const seen = new Map();
+    const dupes = new Set();
+    files.forEach((file, i) => {
+      const key = `${file.name}::${file.size}`;
+      if (seen.has(key)) {
+        dupes.add(seen.get(key));
+        dupes.add(i);
+      } else {
+        seen.set(key, i);
+      }
+    });
+    return dupes;
+  }
+
+  function render(){
+    const duplicateIndexes = getDuplicateIndexes();
+    const hasDuplicates = duplicateIndexes.size > 0;
+
+    count.textContent = `${files.length} PDF${files.length === 1 ? '' : 's'} selected`;
+    clearBtn.disabled = files.length === 0;
+    const hasLoad = loadNumber.value.trim().length > 0;
+    joinBtn.disabled = files.length < 2 || !hasLoad || hasDuplicates;
+    joinBtn.textContent = 'JOIN PDFs';
+
+    list.innerHTML = '';
+    if (!files.length){
+      list.innerHTML = '<div class="empty">No PDFs added yet.</div>';
+      return;
+    }
+
+    if (hasDuplicates && !status.textContent) {
+      setStatus('Possible duplicate PDFs found. Remove the duplicate before joining.', 'bad');
+    } else if (!hasDuplicates && status.textContent.includes('Possible duplicate')) {
+      setStatus('');
+    }
+
+    files.forEach((file, i) => {
+      const row = document.createElement('div');
+      row.className = 'file' + (duplicateIndexes.has(i) ? ' duplicate' : '');
+      row.draggable = true;
+      row.dataset.index = i;
+
+      const handle = document.createElement('div');
+      handle.className = 'handle';
+      handle.textContent = '☰';
+      handle.title = 'Drag to reorder';
+
+      const info = document.createElement('div');
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = `${i + 1}. ${file.name}`;
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = fmt(file.size);
+      info.append(name, meta);
+
+      if (duplicateIndexes.has(i)) {
+        const warning = document.createElement('div');
+        warning.className = 'dupWarn';
+        warning.textContent = '⚠ Possible duplicate — same filename and size';
+        info.appendChild(warning);
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+
+      const up = document.createElement('button');
+      up.type = 'button';
+      up.className = 'mini';
+      up.textContent = '↑';
+      up.title = 'Move up';
+      up.disabled = i === 0;
+      up.addEventListener('click', () => move(i, i - 1));
+
+      const down = document.createElement('button');
+      down.type = 'button';
+      down.className = 'mini';
+      down.textContent = '↓';
+      down.title = 'Move down';
+      down.disabled = i === files.length - 1;
+      down.addEventListener('click', () => move(i, i + 1));
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'mini remove';
+      remove.textContent = '✕';
+      remove.title = 'Remove';
+      remove.addEventListener('click', () => {
+        files.splice(i, 1);
+        setStatus('');
+        render();
+      });
+
+      actions.append(up, down, remove);
+      row.append(handle, info, actions);
+
+      row.addEventListener('dragstart', e => {
+        draggedIndex = i;
+        row.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => {
+        draggedIndex = null;
+        document.querySelectorAll('.file').forEach(x => x.classList.remove('dragging','over'));
+      });
+      row.addEventListener('dragover', e => {
+        e.preventDefault();
+        row.classList.add('over');
+      });
+      row.addEventListener('dragleave', () => row.classList.remove('over'));
+      row.addEventListener('drop', e => {
+        e.preventDefault();
+        row.classList.remove('over');
+        const target = Number(row.dataset.index);
+        if (draggedIndex !== null && draggedIndex !== target) move(draggedIndex, target);
+      });
+
+      list.appendChild(row);
+    });
+  }
+
+  function move(from, to){
+    if (to < 0 || to >= files.length || from === to) return;
+    const [item] = files.splice(from, 1);
+    files.splice(to, 0, item);
+    setStatus('');
+    render();
+  }
+
+  function addFiles(incoming){
+    const pdfs = [...incoming].filter(f =>
+      f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+    );
+    if (!pdfs.length){
+      setStatus('Those were not PDF files.', 'bad');
+      return;
+    }
+    files.push(...pdfs);
+    setStatus(pdfs.length === incoming.length ? '' : 'Non-PDF files were ignored.');
+    render();
+  }
+
+  function openPicker(){
+    picker.value = '';
+    picker.click();
+  }
+
+  drop.addEventListener('click', openPicker);
+  drop.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openPicker();
+    }
+  });
+  addBtn.addEventListener('click', openPicker);
+  picker.addEventListener('change', () => addFiles(picker.files));
+
+  ['dragenter','dragover'].forEach(type => drop.addEventListener(type, e => {
+    e.preventDefault();
+    drop.classList.add('dragover');
+  }));
+  ['dragleave','drop'].forEach(type => drop.addEventListener(type, e => {
+    e.preventDefault();
+    drop.classList.remove('dragover');
+  }));
+  drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+
+  clearBtn.addEventListener('click', () => {
+    files = [];
+    setStatus('');
+    render();
+  });
+
+  loadNumber.addEventListener('input', () => {
+    setStatus('');
+    render();
+  });
+
+  joinBtn.addEventListener('click', async () => {
+    if (files.length < 2 || !loadNumber.value.trim() || getDuplicateIndexes().size > 0) return;
+    if (!window.PDFLib){
+      setStatus('PDF engine did not load. Check the internet connection and reopen this page.', 'bad');
+      return;
+    }
+
+    joinBtn.disabled = true;
+    clearBtn.disabled = true;
+    addBtn.disabled = true;
+    setStatus('Joining PDFs…');
+
+    try {
+      const { PDFDocument } = PDFLib;
+      const merged = await PDFDocument.create();
+
+      for (let i = 0; i < files.length; i++) {
+        setStatus(`Joining ${i + 1} of ${files.length}: ${files[i].name}`);
+        const bytes = await files[i].arrayBuffer();
+        const src = await PDFDocument.load(bytes, { ignoreEncryption: false });
+        const pages = await merged.copyPages(src, src.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      }
+
+      const out = await merged.save();
+      const blob = new Blob([out], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeLoad = loadNumber.value.trim().replace(/[\\/:*?"<>|]+/g, '-');
+      a.download = `${safeLoad}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setStatus(`Done — ${safeLoad}.pdf was downloaded.`, 'good');
+    } catch (err) {
+      console.error(err);
+      const msg = /encrypt/i.test(String(err))
+        ? 'One of the PDFs appears to be password-protected and cannot be joined.'
+        : 'Could not join these PDFs. One file may be damaged or unsupported.';
+      setStatus(msg, 'bad');
+    } finally {
+      addBtn.disabled = false;
+      clearBtn.disabled = files.length === 0;
+      joinBtn.disabled = files.length < 2 || !loadNumber.value.trim() || getDuplicateIndexes().size > 0;
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inhouse Waste Streams Lookup</title>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f1f4f8;
+    color: #1e293b;
+    font-size: 14px;
+  }
+  header {
+    background: #1e3a5f;
+    color: #fff;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    position: relative;
+  }
+  header h1 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .header-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .count {
+    font-size: 12px;
+    background: rgba(255,255,255,0.15);
+    padding: 3px 10px;
+    border-radius: 10px;
+  }
+  .lock-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .lock-btn:hover { background: rgba(255,255,255,0.2); }
+  .lock-btn.unlocked {
+    background: #16a34a;
+    border-color: #15803d;
+  }
+  .lock-btn.unlocked:hover { background: #15803d; }
+
+  /* Admin password drawer */
+  #admin-drawer {
+    position: absolute;
+    top: 100%;
+    right: 18px;
+    background: #fff;
+    border: 1px solid #d6dde6;
+    border-radius: 0 0 6px 6px;
+    padding: 12px 14px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    display: none;
+    z-index: 50;
+    width: 240px;
+  }
+  #admin-drawer.show { display: block; }
+  #admin-drawer label {
+    display: block;
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+  #admin-drawer input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  #admin-drawer .drawer-buttons {
+    display: flex;
+    gap: 6px;
+  }
+  #admin-drawer button {
+    flex: 1;
+    padding: 6px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  #admin-drawer .btn-primary {
+    background: #1e3a5f;
+    color: #fff;
+  }
+  #admin-drawer .btn-cancel {
+    background: #e2e8f0;
+    color: #475569;
+  }
+  #pw-error {
+    color: #b91c1c;
+    font-size: 12px;
+    margin-top: 6px;
+    display: none;
+  }
+  #pw-error.show { display: block; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  #admin-drawer.shake { animation: shake 0.2s; }
+
+  /* Admin banner */
+  .admin-banner {
+    background: linear-gradient(90deg, #16a34a, #15803d);
+    color: #fff;
+    padding: 7px 18px;
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .admin-banner .fb-status {
+    font-size: 12px;
+    background: rgba(255,255,255,0.15);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* Connecting banner (shown while Firebase is loading) */
+  .warn-banner {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 8px 18px;
+    font-size: 13px;
+    border-bottom: 1px solid #fcd34d;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 14px;
+    padding: 14px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .panel {
+    background: #fff;
+    border: 1px solid #d6dde6;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .panel-header {
+    background: #f7f9fc;
+    padding: 8px 12px;
+    border-bottom: 1px solid #d6dde6;
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .search-bar {
+    padding: 10px 12px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  #search {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #search:focus {
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 2px rgba(30,58,95,0.15);
+  }
+  #clear-btn, #add-btn, #seed-btn {
+    padding: 7px 12px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #475569;
+    white-space: nowrap;
+  }
+  #clear-btn:hover { background: #cbd5e1; }
+  #add-btn {
+    background: #1e3a5f;
+    color: #fff;
+    display: none;
+  }
+  #add-btn:hover { background: #2c4f7c; }
+  #seed-btn {
+    background: #f59e0b;
+    color: #fff;
+    display: none;
+  }
+  #seed-btn:hover { background: #d97706; }
+  body.admin #add-btn { display: inline-block; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    text-align: left;
+    padding: 8px 12px;
+    background: #f7f9fc;
+    border-bottom: 2px solid #d6dde6;
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  thead th.actions-col { display: none; }
+  body.admin thead th.actions-col { display: table-cell; }
+
+  tbody tr {
+    border-bottom: 1px solid #f1f5f9;
+  }
+  tbody tr:hover {
+    background: #f8fafc;
+  }
+  tbody tr.editing {
+    background: #fffbeb;
+  }
+  tbody tr.new-row {
+    background: #f0fdf4;
+  }
+  tbody td {
+    padding: 7px 12px;
+    vertical-align: middle;
+  }
+  .pc-cell {
+    font-weight: 600;
+    color: #1e3a5f;
+    font-family: "Consolas", "Monaco", monospace;
+    white-space: nowrap;
+  }
+  .desc-cell { color: #334155; }
+  .copy-btn {
+    font-family: "Consolas", "Monaco", monospace;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a5f;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .copy-btn:hover {
+    background: #dbeafe;
+    border-color: #93c5fd;
+  }
+  .copy-btn.copied {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+    color: #065f46;
+  }
+
+  /* Edit inputs */
+  .edit-input {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1px solid #cbd5e1;
+    border-radius: 3px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .edit-input:focus {
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 2px rgba(30,58,95,0.15);
+  }
+  .edit-input.pc { font-family: "Consolas", "Monaco", monospace; font-weight: 600; }
+  .edit-input.mat { font-family: "Consolas", "Monaco", monospace; }
+  .edit-input.invalid { border-color: #dc2626; background: #fef2f2; }
+
+  /* Row action buttons (admin) */
+  .row-actions {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .row-actions button {
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid;
+    cursor: pointer;
+    font-size: 12px;
+    background: #fff;
+    transition: all 0.15s;
+  }
+  .row-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-edit { border-color: #cbd5e1; color: #475569; }
+  .btn-edit:hover:not(:disabled) { background: #f1f5f9; }
+  .btn-delete { border-color: #fecaca; color: #b91c1c; }
+  .btn-delete:hover:not(:disabled) { background: #fee2e2; }
+  .btn-save { border-color: #16a34a; color: #fff; background: #16a34a !important; }
+  .btn-save:hover:not(:disabled) { background: #15803d !important; }
+  .btn-cancel { border-color: #cbd5e1; color: #475569; }
+  .btn-cancel:hover { background: #f1f5f9; }
+
+  .table-scroll {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+  body.admin .table-scroll { max-height: calc(100vh - 260px); }
+  .no-results {
+    padding: 30px;
+    text-align: center;
+    color: #94a3b8;
+    font-style: italic;
+  }
+  mark {
+    background: #fef08a;
+    color: inherit;
+    padding: 0 1px;
+    border-radius: 2px;
+  }
+
+  /* Right panel - sales orders */
+  .so-section {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .so-section:last-child { border-bottom: none; }
+  .so-section h3 {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .so-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+  .so-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 12px;
+  }
+  .so-item:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+  }
+  .so-item.copied {
+    background: #d1fae5;
+    border-color: #6ee7b7;
+  }
+  .so-month {
+    color: #64748b;
+    font-weight: 500;
+    min-width: 32px;
+  }
+  .so-number {
+    font-family: "Consolas", "Monaco", monospace;
+    color: #1e3a5f;
+    font-weight: 600;
+  }
+  .so-item.copied .so-number { color: #065f46; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e3a5f;
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+  #toast.error { background: #b91c1c; }
+  #toast.success { background: #16a34a; }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .table-scroll { max-height: none; }
+  }
+
+  /* === Bar Code Labels: trigger button === */
+  .labels-help-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff;
+    border: none;
+    padding: 14px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(22,163,74,0.25);
+    transition: all 0.15s;
+    margin-bottom: 12px;
+    line-height: 1.3;
+    letter-spacing: 0.3px;
+  }
+  .labels-help-btn:hover {
+    background: linear-gradient(135deg, #15803d, #14532d);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(22,163,74,0.35);
+  }
+  .labels-help-btn .lh-icon {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .labels-help-btn .lh-text { flex: 1; }
+  .labels-help-btn .lh-sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+  }
+
+  /* === Bar Code Labels: floating popup === */
+  /* Anchored to right side so it never covers the central Material # column */
+  #labels-help-popup {
+    position: fixed;
+    top: 90px;
+    right: 14px;
+    width: 380px;
+    max-width: calc(100vw - 28px);
+    max-height: calc(100vh - 110px);
+    background: #fff;
+    border: 1px solid #d6dde6;
+    border-radius: 8px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.28);
+    display: none;
+    flex-direction: column;
+    z-index: 200;
+    overflow: hidden;
+  }
+  #labels-help-popup.show { display: flex; }
+  .lh-header {
+    background: #1e3a5f;
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+  }
+  .lh-header.dragging { cursor: grabbing; }
+  #labels-help-popup.dragging { box-shadow: 0 20px 50px rgba(15, 23, 42, 0.4); }
+  .lh-grip {
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    margin-right: 8px;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .lh-close { cursor: pointer; }
+  .lh-header h2 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+  }
+  .lh-close {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .lh-close:hover { background: rgba(255,255,255,0.28); }
+  .lh-body {
+    padding: 14px 16px 18px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #1e293b;
+  }
+  .lh-stage {
+    background: #f1f4f8;
+    color: #1e3a5f;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 14px 0 6px;
+  }
+  .lh-stage:first-child { margin-top: 0; }
+  .lh-body ol {
+    margin: 0 0 0 6px;
+    padding-left: 16px;
+  }
+  .lh-body ol li { margin-bottom: 6px; }
+  .lh-body ol li::marker { color: #64748b; font-weight: 600; }
+  .lh-body code {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a5f;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: "Consolas", "Monaco", monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .lh-body strong { color: #0f172a; }
+  .lh-hint {
+    background: #fef9c3;
+    border-left: 3px solid #f59e0b;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin: 8px 0 4px;
+    font-size: 12px;
+    color: #713f12;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Inhouse Waste Streams Lookup</h1>
+  <div class="header-right">
+    <span class="count" id="result-count">— streams</span>
+    <button class="lock-btn" id="lock-btn" type="button">🔒 Admin</button>
+  </div>
+
+  <div id="admin-drawer">
+    <label>Admin Password</label>
+    <input type="password" id="pw-input" autocomplete="off">
+    <div class="drawer-buttons">
+      <button class="btn-primary" id="pw-submit">Unlock</button>
+      <button class="btn-cancel" id="pw-cancel">Cancel</button>
+    </div>
+    <div id="pw-error">Incorrect password</div>
+  </div>
+</header>
+
+<div class="admin-banner" id="admin-banner" style="display:none;">
+  <span>🔓 <strong>ADMIN MODE</strong> — changes save to Firebase</span>
+  <span class="fb-status" id="fb-status">connecting…</span>
+</div>
+
+<div class="warn-banner" id="warn-banner" style="display:none;">
+  ⏳ Connecting to Firebase — edits will persist once connected. Showing baked-in seed data.
+</div>
+
+<div class="layout">
+
+  <div class="panel">
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="Search by PC or description (e.g. LP, ZV, batteries)..." autofocus>
+      <button id="clear-btn" type="button">Clear</button>
+      <button id="add-btn" type="button">+ Add Stream</button>
+      <button id="seed-btn" type="button">⬆ Seed Firebase</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px;">PC</th>
+            <th>Material Description</th>
+            <th style="width:140px;">Material #</th>
+            <th class="actions-col" style="width:130px;"></th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <button type="button" id="labels-help-btn" class="labels-help-btn">
+      <span class="lh-icon">🏷️</span>
+      <span class="lh-text">
+        Creating In-House Bar Code Labels
+        <span class="lh-sub">Step-by-step VA02 + ZSD61 procedure</span>
+      </span>
+    </button>
+
+    <div class="panel">
+      <div class="panel-header">2026 In-House Sales Orders</div>
+      <div class="so-section">
+        <h3>General</h3>
+        <div class="so-grid" id="so-general"></div>
+      </div>
+      <div class="so-section">
+        <h3>Kehinde / Ken</h3>
+        <div class="so-grid" id="so-kk"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Floating help popup — anchored right so the Material # column stays visible/clickable -->
+<div id="labels-help-popup" role="dialog" aria-labelledby="lh-title" aria-hidden="true">
+  <div class="lh-header" id="lh-header" title="Drag to move">
+    <h2 id="lh-title"><span class="lh-grip" aria-hidden="true">⋮⋮</span>🏷️ Creating In-House Bar Code Labels</h2>
+    <button type="button" class="lh-close" id="lh-close" aria-label="Close">✕</button>
+  </div>
+  <div class="lh-body">
+
+    <span class="lh-stage">Stage 1 — VA02 (Sales Order)</span>
+    <ol start="1">
+      <li><code>VA02</code> — enter monthly sales order.</li>
+      <li>Create new item.</li>
+      <li>Under <strong>Waste Profile</strong>, enter <code>INHOUSE-____</code> — or use this tool to grab the <strong>Material #</strong> (just click on it in the table to copy).</li>
+      <li>Under <strong>Order Quantity</strong>, enter the # of labels to create → <code>ENTER</code>.</li>
+      <li>Delivery Block is now available — set to <code>40 - Initial Receiving</code> → <code>ENTER</code>.</li>
+      <li><strong>SAVE</strong>.</li>
+    </ol>
+
+    <span class="lh-stage">Stage 2 — ZSD61 (Manifest)</span>
+    <ol start="7">
+      <li>Go to <code>ZSD61</code>.</li>
+      <li>Enter <code>4111</code> for plant.</li>
+      <li>Change Class to <code>PRINT</code>.</li>
+      <li>Enter the monthly Sales Order number → <code>ENTER</code>.</li>
+      <li>Click the box in the table, then <strong>Create Manifest</strong> at the top.</li>
+      <li>Manifest # = initials + date, e.g. <code>DF05222024</code>.</li>
+      <li>For any signatures, put <code>Y</code>.</li>
+      <li><strong>Items</strong> tab — complete drum type and weight.</li>
+      <li><strong>Transporters</strong> tab — Page 1, Sequence 1, <code>28500010234</code>, <code>Y</code> and date.</li>
+      <li><strong>Receivers</strong> tab — <code>Y</code> and date.</li>
+      <li><strong>SAVE</strong>.</li>
+    </ol>
+
+    <span class="lh-stage">Stage 3 — Back to VA02</span>
+    <ol start="18">
+      <li>Back into <code>VA02</code>.</li>
+      <li>Put Delivery Block on <code>BLANK</code> → <code>ENTER</code>.</li>
+      <li><strong>SAVE</strong>.</li>
+      <li>Go back into <code>VA02</code>.</li>
+      <li>Go to the last item and set <strong>Reason for Rejection</strong> to <code>IN-HOUSE</code>.</li>
+      <li><strong>SAVE</strong>.</li>
+      <li>Print labels. 🏷️</li>
+    </ol>
+
+    <div class="lh-hint">Tip: leave this popup open while you click Material # buttons in the table — the popup stays out of the way on the right.</div>
+  </div>
+</div>
+
+<div id="toast">Copied!</div>
+
+<!-- Shared Firebase init (project-wide singleton: ec-receiving) -->
+<script src="js/firebase-init.js"></script>
+<script>
+// ============================================================
+// Inhouse Waste Streams Lookup — uses the shared firebase-init.js
+// which connects to the ec-receiving Firestore project. Data lives in
+// the `inhouse_waste_streams` collection.
+//
+// Suggested Firestore rule (Firebase Console → Firestore → Rules):
+//   match /inhouse_waste_streams/{doc} {
+//     allow read, write: if true;
+//   }
+// ============================================================
+
+const COLLECTION     = "inhouse_waste_streams";
+const ADMIN_PASSWORD = "dfetter";
+
+const SEED_STREAMS = [
+  {pc:"AF1",  desc:"INHOUSE AEROSOLS FOR FUELS",          mat:"1000040314"},
+  {pc:"BR1",  desc:"BATTERIES FOR RECLAIM - LEAD ACID",   mat:"1000040317"},
+  {pc:"BR5",  desc:"BATTERIES FOR RECLAIM - ALKALINE",    mat:"1000040320"},
+  {pc:"BSTR", desc:"INHOUSE BALLASTS FOR LANDFILL",       mat:"1000124023"},
+  {pc:"BSTR", desc:"INHOUSE GENERATED NON-PCB BALLASTS",  mat:"1000053000"},
+  {pc:"CFC",  desc:"INHOUSE - NON RCRA CHLOROFLUOROCARB", mat:"1000040322"},
+  {pc:"CZ1H", desc:"INHOUSE NON-RCRA GASES",              mat:"1000041582"},
+  {pc:"CZ2",  desc:"INHOUSE GENERATED FLAM.CYLINDER LAB", mat:"1000040323"},
+  {pc:"CZ2H", desc:"INHOUSE GENERATED FLAM.CYLINDER LAB", mat:"1000112988"},
+  {pc:"CZ7",  desc:"CYLINDERS OF PYROPHORIC GASES",       mat:"1000119413"},
+  {pc:"CZ8",  desc:"CYLINDERS OF INORGANIC ACIDS AND BA", mat:"1000123416"},
+  {pc:"CZ9H", desc:"CYLINDERS OF UNKNOWN GASSES INHOUSE", mat:"1000125121"},
+  {pc:"ER",   desc:"E-WASTE",                             mat:"1000040324"},
+  {pc:"FR2",  desc:"INHOUSE FR2",                         mat:"1000041586"},
+  {pc:"FR3",  desc:"HIGH DENSITY BULBS",                  mat:"1000040325"},
+  {pc:"FT",   desc:"INHOUSE FT",                          mat:"1000167773"},
+  {pc:"LA3",  desc:"INHOUSE GENERATED INORGANIC ACID LA", mat:"1000040326"},
+  {pc:"LC1",  desc:"INHOUSE-KEHINDE",                     mat:"1000040327"},
+  {pc:"LE",   desc:"INHOUSE LE",                          mat:"1000040328"},
+  {pc:"LF",   desc:"INHOUSE LIQUID FOR FUELS",            mat:"1000040329"},
+  {pc:"LM2",  desc:"INHOUSE GENERATED LM MATERIAL",       mat:"1000040330"},
+  {pc:"LP",   desc:"INHOUSE LP",                          mat:"1000041592"},
+  {pc:"LP",   desc:"INHOUSE LP",                          mat:"1000580454"},
+  {pc:"LP5",  desc:"INHOUSE LP5",                         mat:"1000262487"},
+  {pc:"LP5",  desc:"INHOUSE-LP5",                         mat:"1000243612"},
+  {pc:"LP7",  desc:"INHOUSE LP7",                         mat:"1000262484"},
+  {pc:"LP7",  desc:"INHOUSE-LP7",                         mat:"1000233597"},
+  {pc:"LP7",  desc:"INHOUSE-LP7",                         mat:"1000243611"},
+  {pc:"LPEQD",desc:"INHOUSE-LPEQD",                       mat:"1000091030"},
+  {pc:"LPO",  desc:"INHOUSE LPO",                         mat:"1000173954"},
+  {pc:"LPR",  desc:"INHOUSE LPR",                         mat:"1000173002"},
+  {pc:"LPS",  desc:"INHOUSE STABLEX DRUMS",               mat:"1000041593"},
+  {pc:"LS",   desc:"INHOUSE LIQUIDS FOR SOLIDIFICATION",  mat:"1000040332"},
+  {pc:"LX1",  desc:"INHOUSE GENERATED LIQUID OXIDIZER LX",mat:"1000041594"},
+  {pc:"LY",   desc:"INHOUSE ISOCYANATES",                 mat:"1000041595"},
+  {pc:"MF",   desc:"INHOUSE GENERATED FUELS LABELS",      mat:"1000040333"},
+  {pc:"N1",   desc:"INHOUSE NON HAZ ASBESTOS",            mat:"1000041596"},
+  {pc:"ND",   desc:"INHOUSE BULAKBLE INCINERATION ITEMS", mat:"1000040334"},
+  {pc:"NEM",  desc:"INHOUSE NEM",                         mat:"1000101955"},
+  {pc:"NH",   desc:"INHOUSE-NH",                          mat:"1000041600"},
+  {pc:"NK",   desc:"INHOUSE MICROENCAPSULATION DEBRIS",   mat:"1000041604"},
+  {pc:"NM",   desc:"INHOUSE GENERATED NM MATERIAL",       mat:"1000041605"},
+  {pc:"NM2",  desc:"INHOUSE GENERATED NM MATERIAL",       mat:"1000041605"},
+  {pc:"NP",   desc:"CARBON",                              mat:"1000040335"},
+  {pc:"NR",   desc:"INHOUSE NR W/CODES",                  mat:"1000041576"},
+  {pc:"NSM",  desc:"INHOUSE NSM",                         mat:"1000040337"},
+  {pc:"NTA",  desc:"INHOUSE GENERATED NTA LABELS",        mat:"1000040338"},
+  {pc:"NTC",  desc:"INHOUSE NTC",                         mat:"1000041607"},
+  {pc:"NX1",  desc:"INHOUSE DEPACK",                      mat:"1000040339"},
+  {pc:"NX3",  desc:"INHOUSE-NX3",                         mat:"1000041609"},
+  {pc:"PI",   desc:"INHOUSE PAINT FOR FUELS DRUMS-KENA",  mat:"1000040340"},
+  {pc:"RH",   desc:"INHOUSE RH",                          mat:"1000107573"},
+  {pc:"RH1",  desc:"INHOUSE RH1",                         mat:"1000040341"},
+  {pc:"RLF",  desc:"INHOUSE RLF",                         mat:"1000041613"},
+  {pc:"RM",   desc:"INHOUSE RM FOR SDS RECYCLING",        mat:"1000544777"},
+  {pc:"RS2",  desc:"INHOUSE RS2",                         mat:"1000102726"},
+  {pc:"RSB2", desc:"INHOUSE RSB2",                        mat:"1000111809"},
+  {pc:"RSD",  desc:"INHOUSE RSD",                         mat:"1000100861"},
+  {pc:"RT",   desc:"INHOUSE RT",                          mat:"1000040342"},
+  {pc:"RZV1", desc:"SMALL CONTAINERS OF SDS LIQ",         mat:"1000040343"},
+  {pc:"SF",   desc:"INHOUSE SLUDGE FOR FUELS",            mat:"1000041618"},
+  {pc:"STA",  desc:"INHOUSE-STA",                         mat:"1000041620"},
+  {pc:"STPDC",desc:"INHOUSE-STPDC",                       mat:"1000041621"},
+  {pc:"VA",   desc:"INHOUSE ACIDS FROM LAB WS #27",       mat:"1000040345"},
+  {pc:"VC",   desc:"INHOUSE VAC FOR FUELS CAUSTIC",       mat:"1000040346"},
+  {pc:"VF",   desc:"INHOUSE-KEHINDE",                     mat:"1000041622"},
+  {pc:"VI",   desc:"INHOUSE VI MATERIAL",                 mat:"1000041623"},
+  {pc:"WR",   desc:"INHOUSE WR LABEL",                    mat:"1000040347"},
+  {pc:"XM",   desc:"INHOUSE GENERATED XM MATERIAL",       mat:"1000040348"},
+  {pc:"ZDIOX",desc:"INHOUSE DIOXIN WASTE",                mat:"1000040349"},
+  {pc:"ZH",   desc:"INHOUSE LABPACK QUANTITIES OF CYANI", mat:"1000040350"},
+  {pc:"ZI",   desc:"INCOMING DEPACK",                     mat:"1000040351"},
+  {pc:"ZL",   desc:"INHOUSE DEPACK",                      mat:"1000040353"},
+  {pc:"ZP",   desc:"INBOUND LAB PACK FROM REPRESENTED G", mat:"1000041628"},
+  {pc:"ZS",   desc:"INHOUSE ZS DRUMS",                    mat:"1000041630"},
+  {pc:"ZV1",  desc:"INHOUSE SAMPLE JARS/VIALS OF NON LP", mat:"1000040354"},
+  {pc:"ZV2",  desc:"LAB PACK QUANTITIES OF INORGANIC AC", mat:"1000041631"},
+  {pc:"ZV3",  desc:"INHOUSE ZV3",                         mat:"1000041632"},
+  {pc:"ZV5",  desc:"INHOUSE ZV5",                         mat:"1000096716"},
+  {pc:"ZV6",  desc:"INHOUSE ZV6",                         mat:"1000095648"},
+  {pc:"ZV6",  desc:"INHOUSE ZV6",                         mat:"1000164887"},
+  {pc:"ZV7",  desc:"INHOUSE ZV7",                         mat:"1000041633"},
+  {pc:"ZX",   desc:"INHOUSE-KEHINDE",                     mat:"1000041634"}
+];
+
+const SO_GENERAL = [
+  {m:"Jan", n:"4609591"}, {m:"Feb", n:"4609592"}, {m:"Mar", n:"4609597"},
+  {m:"Apr", n:"4609598"}, {m:"May", n:"4609600"}, {m:"Jun", n:"4609602"},
+  {m:"Jul", n:"4609603"}, {m:"Aug", n:"4609604"}, {m:"Sep", n:"4609605"},
+  {m:"Oct", n:"4609606"}, {m:"Nov", n:"4609607"}, {m:"Dec", n:"4609608"}
+];
+const SO_KK = [
+  {m:"Jan", n:"4609609"}, {m:"Feb", n:"4609610"}, {m:"Mar", n:"4609611"},
+  {m:"Apr", n:"4609612"}, {m:"May", n:"4609613"}, {m:"Jun", n:"4609614"},
+  {m:"Jul", n:"4609615"}, {m:"Aug", n:"4609616"}, {m:"Sep", n:"4609617"},
+  {m:"Oct", n:"4609618"}, {m:"Nov", n:"4609619"}, {m:"Dec", n:"4609620"}
+];
+
+// ===== State =====
+let streams = [];
+let isAdmin = false;
+let editingId = null;
+let addingNew = false;
+let firebaseReady = false;
+let db = null;
+let searchTerm = '';
+
+// ===== DOM =====
+const $rows       = document.getElementById('rows');
+const $search     = document.getElementById('search');
+const $count      = document.getElementById('result-count');
+const $toast      = document.getElementById('toast');
+const $lockBtn    = document.getElementById('lock-btn');
+const $drawer     = document.getElementById('admin-drawer');
+const $pwInput    = document.getElementById('pw-input');
+const $pwError    = document.getElementById('pw-error');
+const $pwSubmit   = document.getElementById('pw-submit');
+const $pwCancel   = document.getElementById('pw-cancel');
+const $adminBan   = document.getElementById('admin-banner');
+const $warnBan    = document.getElementById('warn-banner');
+const $addBtn     = document.getElementById('add-btn');
+const $seedBtn    = document.getElementById('seed-btn');
+const $clearBtn   = document.getElementById('clear-btn');
+const $fbStatus   = document.getElementById('fb-status');
+
+// ===== Utils =====
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function highlight(text, term) {
+  if (!term) return escapeHTML(text);
+  const esc = escapeHTML(text);
+  const termEsc = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return esc.replace(new RegExp('(' + termEsc + ')', 'gi'), '<mark>$1</mark>');
+}
+function showToast(msg, kind) {
+  $toast.textContent = msg;
+  $toast.className = '';
+  $toast.classList.add('show');
+  if (kind) $toast.classList.add(kind);
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => $toast.className = '', 1400);
+}
+function sortStreams() {
+  streams.sort((a, b) => {
+    const pcCmp = a.pc.localeCompare(b.pc);
+    if (pcCmp !== 0) return pcCmp;
+    return a.mat.localeCompare(b.mat);
+  });
+}
+
+// ===== Data loading =====
+async function loadStreams() {
+  if (firebaseReady) {
+    try {
+      const snap = await db.collection(COLLECTION).get();
+      if (snap.size > 0) {
+        streams = snap.docs.map(d => {
+          const data = d.data();
+          return {
+            id: d.id,
+            pc: data.pc || '',
+            desc: data.desc || '',
+            mat: data.mat || ''
+          };
+        });
+      } else {
+        // Firebase connected but collection empty — show seed as preview
+        streams = SEED_STREAMS.map((s, i) => ({...s, id: '_seed_' + i, _seed: true}));
+        if (isAdmin) $seedBtn.style.display = 'inline-block';
+      }
+    } catch (e) {
+      console.error('Load failed:', e);
+      showToast('Load failed — using seed data', 'error');
+      streams = SEED_STREAMS.map((s, i) => ({...s, id: '_seed_' + i, _seed: true}));
+    }
+  } else {
+    streams = SEED_STREAMS.map((s, i) => ({...s, id: '_seed_' + i, _seed: true}));
+  }
+  sortStreams();
+  render();
+}
+
+// ===== CRUD =====
+async function saveEdit(id, pc, desc, mat) {
+  if (!firebaseReady) { showToast('Firebase not ready yet', 'error'); return false; }
+  try {
+    await db.collection(COLLECTION).doc(id).set({
+      pc, desc, mat,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    const row = streams.find(s => s.id === id);
+    if (row) { row.pc = pc; row.desc = desc; row.mat = mat; }
+    sortStreams();
+    showToast('Saved', 'success');
+    return true;
+  } catch (e) {
+    console.error('Save failed:', e);
+    showToast('Save failed: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function addStream(pc, desc, mat) {
+  if (!firebaseReady) { showToast('Firebase not ready yet', 'error'); return false; }
+  try {
+    const ref = await db.collection(COLLECTION).add({
+      pc, desc, mat,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    streams.push({id: ref.id, pc, desc, mat});
+    sortStreams();
+    showToast('Added ' + pc, 'success');
+    return true;
+  } catch (e) {
+    console.error('Add failed:', e);
+    showToast('Add failed: ' + e.message, 'error');
+    return false;
+  }
+}
+
+async function deleteStream(id) {
+  if (!firebaseReady) { showToast('Firebase not ready yet', 'error'); return; }
+  const row = streams.find(s => s.id === id);
+  if (!row) return;
+  if (!confirm(`Delete this entry?\n\n${row.pc} — ${row.desc}\nMat # ${row.mat}`)) return;
+  try {
+    await db.collection(COLLECTION).doc(id).delete();
+    streams = streams.filter(s => s.id !== id);
+    showToast('Deleted', 'success');
+    render();
+  } catch (e) {
+    console.error('Delete failed:', e);
+    showToast('Delete failed: ' + e.message, 'error');
+  }
+}
+
+async function seedFirebase() {
+  if (!firebaseReady) { showToast('Firebase not ready yet', 'error'); return; }
+  if (!confirm(`Upload all ${SEED_STREAMS.length} seed entries to Firebase?\n\n(Skip this if there's already data in the collection.)`)) return;
+  $seedBtn.disabled = true;
+  $seedBtn.textContent = 'Seeding...';
+  try {
+    const batch = db.batch();
+    SEED_STREAMS.forEach(s => {
+      const ref = db.collection(COLLECTION).doc();
+      batch.set(ref, {
+        pc: s.pc, desc: s.desc, mat: s.mat,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    });
+    await batch.commit();
+    showToast(`Seeded ${SEED_STREAMS.length} entries`, 'success');
+    $seedBtn.style.display = 'none';
+    await loadStreams();
+  } catch (e) {
+    console.error('Seed failed:', e);
+    showToast('Seed failed: ' + e.message, 'error');
+  } finally {
+    $seedBtn.disabled = false;
+    $seedBtn.textContent = '⬆ Seed Firebase';
+  }
+}
+
+// ===== Render =====
+function rowHTML(s, t) {
+  const isEditing = editingId === s.id;
+  if (isEditing) {
+    return `
+      <tr class="editing" data-id="${escapeHTML(s.id)}">
+        <td><input class="edit-input pc" data-field="pc" value="${escapeHTML(s.pc)}" maxlength="10"></td>
+        <td><input class="edit-input desc" data-field="desc" value="${escapeHTML(s.desc)}" maxlength="60"></td>
+        <td><input class="edit-input mat" data-field="mat" value="${escapeHTML(s.mat)}" maxlength="20"></td>
+        <td>
+          <div class="row-actions">
+            <button class="btn-save" data-action="save-edit" data-id="${escapeHTML(s.id)}">Save</button>
+            <button class="btn-cancel" data-action="cancel-edit">Cancel</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+  const actionsCell = isAdmin ? `
+    <td>
+      <div class="row-actions">
+        <button class="btn-edit" data-action="edit" data-id="${escapeHTML(s.id)}" ${s._seed ? 'disabled title="Seed Firebase first"' : ''}>Edit</button>
+        <button class="btn-delete" data-action="delete" data-id="${escapeHTML(s.id)}" ${s._seed ? 'disabled title="Seed Firebase first"' : ''}>Del</button>
+      </div>
+    </td>` : '';
+  return `
+    <tr data-id="${escapeHTML(s.id)}">
+      <td class="pc-cell">${highlight(s.pc, t)}</td>
+      <td class="desc-cell">${highlight(s.desc, t)}</td>
+      <td><button class="copy-btn" data-copy="${escapeHTML(s.mat)}">${escapeHTML(s.mat)}</button></td>
+      ${actionsCell}
+    </tr>`;
+}
+
+function addRowHTML() {
+  return `
+    <tr class="new-row" data-id="__new__">
+      <td><input class="edit-input pc" data-field="pc" placeholder="PC" maxlength="10"></td>
+      <td><input class="edit-input desc" data-field="desc" placeholder="Material description" maxlength="60"></td>
+      <td><input class="edit-input mat" data-field="mat" placeholder="Material #" maxlength="20"></td>
+      <td>
+        <div class="row-actions">
+          <button class="btn-save" data-action="save-new">Save</button>
+          <button class="btn-cancel" data-action="cancel-new">Cancel</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function render() {
+  const t = searchTerm.trim().toLowerCase();
+  const filtered = t
+    ? streams.filter(s => s.pc.toLowerCase().includes(t) || s.desc.toLowerCase().includes(t))
+    : streams.slice();
+
+  let html = '';
+  if (addingNew) html += addRowHTML();
+
+  if (filtered.length === 0 && !addingNew) {
+    html = `<tr><td colspan="${isAdmin ? 4 : 3}"><div class="no-results">No streams match "${escapeHTML(searchTerm)}"</div></td></tr>`;
+  } else {
+    html += filtered.map(s => rowHTML(s, t)).join('');
+  }
+  $rows.innerHTML = html;
+
+  $count.textContent = filtered.length === streams.length
+    ? `${streams.length} streams`
+    : `${filtered.length} of ${streams.length}`;
+
+  if (addingNew) {
+    const firstInput = $rows.querySelector('.new-row .edit-input.pc');
+    if (firstInput) firstInput.focus();
+  } else if (editingId) {
+    const editRow = $rows.querySelector(`tr.editing .edit-input.pc`);
+    if (editRow) editRow.focus();
+  }
+}
+
+function renderSO(containerId, list) {
+  document.getElementById(containerId).innerHTML = list.map(so => `
+    <div class="so-item" data-copy="${so.n}">
+      <span class="so-month">${so.m}</span>
+      <span class="so-number">${so.n}</span>
+    </div>`).join('');
+}
+
+// ===== Admin lock/unlock =====
+function setAdmin(on) {
+  isAdmin = on;
+  document.body.classList.toggle('admin', on);
+  $adminBan.style.display = on ? 'flex' : 'none';
+  $lockBtn.classList.toggle('unlocked', on);
+  $lockBtn.innerHTML = on ? '🔓 Locked' : '🔒 Admin';
+  $lockBtn.title = on ? 'Click to lock' : 'Click to unlock';
+  if (!on) {
+    editingId = null;
+    addingNew = false;
+    $seedBtn.style.display = 'none';
+  } else if (firebaseReady) {
+    const seedOnly = streams.length > 0 && streams.every(s => s._seed);
+    if (seedOnly) $seedBtn.style.display = 'inline-block';
+  }
+  render();
+}
+
+function openDrawer() {
+  $drawer.classList.add('show');
+  $pwInput.value = '';
+  $pwError.classList.remove('show');
+  setTimeout(() => $pwInput.focus(), 50);
+}
+function closeDrawer() {
+  $drawer.classList.remove('show');
+  $pwError.classList.remove('show');
+}
+function tryUnlock() {
+  if ($pwInput.value === ADMIN_PASSWORD) {
+    closeDrawer();
+    setAdmin(true);
+    showToast('Admin mode unlocked', 'success');
+  } else {
+    $pwError.classList.add('show');
+    $drawer.classList.remove('shake');
+    void $drawer.offsetWidth;
+    $drawer.classList.add('shake');
+    $pwInput.select();
+  }
+}
+
+// ===== Event wiring =====
+$lockBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (isAdmin) {
+    setAdmin(false);
+    showToast('Locked');
+  } else {
+    if ($drawer.classList.contains('show')) closeDrawer();
+    else openDrawer();
+  }
+});
+$pwSubmit.addEventListener('click', tryUnlock);
+$pwCancel.addEventListener('click', closeDrawer);
+$pwInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') tryUnlock();
+  if (e.key === 'Escape') closeDrawer();
+});
+document.addEventListener('click', e => {
+  if (!$drawer.contains(e.target) && e.target !== $lockBtn && !$lockBtn.contains(e.target)) {
+    closeDrawer();
+  }
+});
+
+$search.addEventListener('input', e => {
+  searchTerm = e.target.value;
+  render();
+});
+$clearBtn.addEventListener('click', () => {
+  $search.value = '';
+  searchTerm = '';
+  render();
+  $search.focus();
+});
+$addBtn.addEventListener('click', () => {
+  if (!firebaseReady) { showToast('Firebase not ready yet', 'error'); return; }
+  addingNew = true;
+  editingId = null;
+  render();
+});
+$seedBtn.addEventListener('click', seedFirebase);
+
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+    e.preventDefault();
+    $search.focus();
+    $search.select();
+  }
+  if (e.key === 'Escape') {
+    if (addingNew || editingId) {
+      addingNew = false;
+      editingId = null;
+      render();
+    } else if (document.activeElement === $search) {
+      $search.value = '';
+      searchTerm = '';
+      render();
+    }
+  }
+});
+
+function validateInputs(row, pc, desc, mat) {
+  let bad = false;
+  ['pc','desc','mat'].forEach(f => {
+    const inp = row.querySelector(`[data-field=${f}]`);
+    if (!inp.value.trim()) { inp.classList.add('invalid'); bad = true; }
+    else inp.classList.remove('invalid');
+  });
+  if (bad) { showToast('All three fields required', 'error'); return false; }
+  return true;
+}
+
+// Delegated row actions
+$rows.addEventListener('click', async e => {
+  const copyTarget = e.target.closest('[data-copy]');
+  if (copyTarget) {
+    const v = copyTarget.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(v);
+      copyTarget.classList.add('copied');
+      setTimeout(() => copyTarget.classList.remove('copied'), 900);
+      showToast('Copied ' + v);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = v;
+      ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); showToast('Copied ' + v); } catch (_) { showToast('Copy failed', 'error'); }
+      document.body.removeChild(ta);
+    }
+    return;
+  }
+
+  const actionEl = e.target.closest('[data-action]');
+  if (!actionEl) return;
+  const action = actionEl.dataset.action;
+  const id = actionEl.dataset.id;
+
+  if (action === 'edit') {
+    editingId = id;
+    addingNew = false;
+    render();
+  } else if (action === 'cancel-edit') {
+    editingId = null;
+    render();
+  } else if (action === 'save-edit') {
+    const row = $rows.querySelector(`tr.editing`);
+    const pc   = row.querySelector('[data-field=pc]').value.trim();
+    const desc = row.querySelector('[data-field=desc]').value.trim();
+    const mat  = row.querySelector('[data-field=mat]').value.trim();
+    if (!validateInputs(row, pc, desc, mat)) return;
+    actionEl.disabled = true; actionEl.textContent = '...';
+    const ok = await saveEdit(id, pc, desc, mat);
+    if (ok) editingId = null;
+    render();
+  } else if (action === 'delete') {
+    await deleteStream(id);
+  } else if (action === 'cancel-new') {
+    addingNew = false;
+    render();
+  } else if (action === 'save-new') {
+    const row = $rows.querySelector(`tr.new-row`);
+    const pc   = row.querySelector('[data-field=pc]').value.trim();
+    const desc = row.querySelector('[data-field=desc]').value.trim();
+    const mat  = row.querySelector('[data-field=mat]').value.trim();
+    if (!validateInputs(row, pc, desc, mat)) return;
+    actionEl.disabled = true; actionEl.textContent = '...';
+    const ok = await addStream(pc, desc, mat);
+    if (ok) addingNew = false;
+    render();
+  }
+});
+
+// Enter inside edit/new row → save
+$rows.addEventListener('keydown', e => {
+  if (e.target.classList.contains('edit-input') && e.key === 'Enter') {
+    const tr = e.target.closest('tr');
+    const saveBtn = tr.querySelector('[data-action=save-edit], [data-action=save-new]');
+    if (saveBtn) saveBtn.click();
+  }
+});
+
+// SO copy
+document.querySelectorAll('.so-grid').forEach(g => {
+  g.addEventListener('click', async e => {
+    const item = e.target.closest('[data-copy]');
+    if (!item) return;
+    const v = item.dataset.copy;
+    try {
+      await navigator.clipboard.writeText(v);
+      item.classList.add('copied');
+      setTimeout(() => item.classList.remove('copied'), 900);
+      showToast('Copied ' + v);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = v; ta.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); showToast('Copied ' + v); } catch(_) {}
+      document.body.removeChild(ta);
+    }
+  });
+});
+
+// ===== Bar Code Labels help popup =====
+const $labelsHelpBtn = document.getElementById('labels-help-btn');
+const $labelsHelpPopup = document.getElementById('labels-help-popup');
+const $labelsHelpClose = document.getElementById('lh-close');
+const $labelsHelpHeader = document.getElementById('lh-header');
+
+function openLabelsHelp() {
+  $labelsHelpPopup.classList.add('show');
+  $labelsHelpPopup.setAttribute('aria-hidden', 'false');
+}
+function closeLabelsHelp() {
+  $labelsHelpPopup.classList.remove('show');
+  $labelsHelpPopup.setAttribute('aria-hidden', 'true');
+}
+$labelsHelpBtn.addEventListener('click', () => {
+  if ($labelsHelpPopup.classList.contains('show')) closeLabelsHelp();
+  else openLabelsHelp();
+});
+$labelsHelpClose.addEventListener('click', e => { e.stopPropagation(); closeLabelsHelp(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $labelsHelpPopup.classList.contains('show')) closeLabelsHelp();
+});
+
+// --- Drag-to-move (mouse + touch) ---
+let dragState = null; // { startX, startY, originLeft, originTop }
+function pointerXY(e) {
+  if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+function dragStart(e) {
+  // Ignore drags that start on the close button
+  if (e.target.closest('.lh-close')) return;
+  const rect = $labelsHelpPopup.getBoundingClientRect();
+  // Switch from `right`-anchored to `left/top`-anchored so we can move freely
+  $labelsHelpPopup.style.left = rect.left + 'px';
+  $labelsHelpPopup.style.top  = rect.top  + 'px';
+  $labelsHelpPopup.style.right = 'auto';
+  $labelsHelpPopup.classList.add('dragging');
+  $labelsHelpHeader.classList.add('dragging');
+  const p = pointerXY(e);
+  dragState = { startX: p.x, startY: p.y, originLeft: rect.left, originTop: rect.top };
+  // For touch, prevent default to stop scrolling while dragging
+  if (e.cancelable) e.preventDefault();
+}
+function dragMove(e) {
+  if (!dragState) return;
+  const p = pointerXY(e);
+  const dx = p.x - dragState.startX;
+  const dy = p.y - dragState.startY;
+  const rect = $labelsHelpPopup.getBoundingClientRect();
+  // Clamp so the popup stays at least mostly on screen (keep 40px of header visible)
+  const minX = -(rect.width - 80);
+  const maxX = window.innerWidth - 80;
+  const minY = 0;
+  const maxY = window.innerHeight - 40;
+  let newLeft = dragState.originLeft + dx;
+  let newTop  = dragState.originTop  + dy;
+  if (newLeft < minX) newLeft = minX;
+  if (newLeft > maxX) newLeft = maxX;
+  if (newTop  < minY) newTop  = minY;
+  if (newTop  > maxY) newTop  = maxY;
+  $labelsHelpPopup.style.left = newLeft + 'px';
+  $labelsHelpPopup.style.top  = newTop  + 'px';
+  if (e.cancelable) e.preventDefault();
+}
+function dragEnd() {
+  if (!dragState) return;
+  dragState = null;
+  $labelsHelpPopup.classList.remove('dragging');
+  $labelsHelpHeader.classList.remove('dragging');
+}
+$labelsHelpHeader.addEventListener('mousedown', dragStart);
+document.addEventListener('mousemove', dragMove);
+document.addEventListener('mouseup', dragEnd);
+$labelsHelpHeader.addEventListener('touchstart', dragStart, { passive: false });
+document.addEventListener('touchmove', dragMove, { passive: false });
+document.addEventListener('touchend', dragEnd);
+document.addEventListener('touchcancel', dragEnd);
+
+// ===== Boot =====
+renderSO('so-general', SO_GENERAL);
+renderSO('so-kk', SO_KK);
+
+// Render seed data immediately so the UI is responsive
+$warnBan.style.display = 'block';
+loadStreams();
+
+// Wait for the shared firebase-init.js to finish, then re-load from Firestore
+if (typeof onFirebaseReady === 'function') {
+  onFirebaseReady(function(sharedDb) {
+    db = sharedDb;
+    firebaseReady = true;
+    $warnBan.style.display = 'none';
+    $fbStatus.textContent = 'connected: ec-receiving';
+    loadStreams();
+  });
+} else {
+  // firebase-init.js failed to load — leave seed-only mode in place
+  console.warn('firebase-init.js not detected — running in seed-only mode');
+  $warnBan.style.display = 'block';
+  $warnBan.innerHTML = '⚠ Firebase init script missing — edits will not persist.';
+  $fbStatus.textContent = 'init missing';
+}
+</script>
+
+</body>
+</html>

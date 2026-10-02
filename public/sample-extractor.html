@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Install Sample # Grabber — Receiving Tools</title>
+<style>
+*{box-sizing:border-box;}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#0a0a14;color:#d0d0e0;margin:0;padding:30px 20px;min-height:100vh;}
+.top-bar{max-width:660px;margin:0 auto 20px;display:flex;justify-content:space-between;align-items:center;}
+.back-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;background:#5b8aff;color:#fff;border-radius:8px;font-size:15px;font-weight:700;text-decoration:none;transition:background .15s;font-family:'Segoe UI',Arial,sans-serif;}
+.back-btn:hover{background:#4a79ee;}
+.back-btn svg{width:16px;height:16px;fill:currentColor;}
+.card{max-width:660px;margin:0 auto;background:#131320;border:1px solid #2a2a3a;border-radius:12px;padding:36px 40px;box-shadow:0 4px 24px rgba(0,0,0,.3);}
+h2{margin:0 0 6px;color:#f0c060;font-size:22px;}
+.subtitle{color:#888;font-size:14px;margin-bottom:24px;}
+.pitch{color:#ccc;font-size:14px;line-height:1.75;margin:0;}
+.pitch strong{color:#e0e0e0;}
+.pitch-box{background:#0d0d1a;border:1px solid #1e1e36;border-radius:10px;padding:22px 24px;margin-bottom:26px;}
+.step{display:flex;gap:14px;margin-bottom:22px;align-items:flex-start;}
+.num{background:#5b8aff;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;flex-shrink:0;margin-top:2px;}
+.step-text{font-size:14px;color:#ccc;line-height:1.7;}
+.step-text strong{color:#e0e0e0;}
+.bm-wrap{margin:12px 0 6px;}
+a.bm{display:inline-block;padding:14px 24px;background:#5b8aff;color:#fff;border-radius:8px;font-size:15px;font-weight:bold;text-decoration:none;border:2px dashed rgba(255,255,255,.4);outline:3px dashed #5b8aff;cursor:grab;user-select:none;transition:background .15s;}
+a.bm:hover{background:#4a79ee;}
+.hint{font-size:12px;color:#666;margin-top:8px;}
+hr{border:none;border-top:1px solid #2a2a3a;margin:26px 0;}
+.note{font-size:12px;color:#888;background:#0a0a14;border:1px solid #1e1e36;border-radius:8px;padding:14px 16px;line-height:1.8;}
+.note strong{color:#aaa;}
+code{background:#1e1e36;padding:2px 6px;border-radius:3px;color:#f0c060;font-size:12px;}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="dashboard.html" class="back-btn"><svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg> Back to Receiving Tools</a>
+</div>
+<div class="card">
+  <h2>&#129514; Install Sample # Grabber</h2>
+  <div class="subtitle">Stop hunting for sample numbers during 2nd Sets.</div>
+
+  <div class="pitch-box">
+    <p class="pitch">
+      You know the drill &#8212; you've got the LSR open, you need to pull sample numbers for <strong>ZLO01</strong>, and you're scanning through duplicates trying not to miss the odd one out. It's tedious and it's easy to slip up.
+    </p>
+    <p class="pitch" style="margin-top:12px;">
+      This tool does it for you in <strong>one click</strong>. With the LSR open in Chrome, hit the bookmarklet and it instantly grabs every sample number on the page, strips out the duplicates, and copies the clean list straight to your clipboard. All that's left is to paste into the batch section of <strong>ZLO01</strong> in Lab.
+    </p>
+    <p class="pitch" style="margin-top:12px;">
+      It takes 30 seconds to install and saves you time on every single load. Seriously &#8212; <strong>give it a shot.</strong>
+    </p>
+  </div>
+
+  <hr>
+
+  <div class="step">
+    <div class="num">1</div>
+    <div class="step-text">
+      <strong>Drag this button to your Chrome bookmarks bar:</strong>
+      <div class="bm-wrap">
+        <a class="bm" href="javascript:void(function(){var o=document.getElementById('__sgrab');if(o)o.remove();var ks=document.getElementById('__sgcss');if(ks)ks.remove();var d=document.createElement('div');d.id='__sgrab';d.style.cssText='position:fixed;top:20px;left:50%25;transform:translateX(-50%25);z-index:999999;background:%231a1a2e;color:%23f0c060;font-family:Segoe UI,Arial,sans-serif;font-size:15px;font-weight:700;padding:14px 28px;border-radius:10px;border:2px solid %235b8aff;box-shadow:0 4px 24px rgba(0,0,0,.5);display:flex;align-items:center;gap:10px';var st=document.createElement('style');st.id='__sgcss';st.textContent='@keyframes __sgspin{to{transform:rotate(360deg)}}';document.head.appendChild(st);d.innerHTML='<span style=%22display:inline-block;width:18px;height:18px;border:3px solid %235b8aff;border-top-color:transparent;border-radius:50%25;animation:__sgspin .8s linear infinite%22></span> Scanning PDF for samples\u2026';document.body.appendChild(d);function showResult(samples){d.remove();st.remove();var box=document.createElement('div');box.id='__sgrab';box.style.cssText='position:fixed;top:50%25;left:50%25;transform:translate(-50%25,-50%25);z-index:999999;background:%231a1a2e;color:%23d0d0e0;font-family:Segoe UI,Arial,sans-serif;border-radius:12px;border:2px solid %235b8aff;box-shadow:0 8px 32px rgba(0,0,0,.6);padding:24px;width:340px;text-align:center';var hd=document.createElement('div');hd.style.cssText='color:%234caf50;font-size:17px;font-weight:700;margin-bottom:12px';hd.textContent='\u2705 '+samples.length+' unique samples found';box.appendChild(hd);var ta=document.createElement('textarea');ta.value=samples.join('\n');ta.style.cssText='width:100%25;height:'+Math.min(200,samples.length*24+16)+'px;background:%230d0d1a;color:%23d0d0e0;border:1px solid %232a2a3a;border-radius:8px;font-family:Consolas,Courier New,monospace;font-size:14px;padding:10px;resize:none';ta.readOnly=true;box.appendChild(ta);var bwrap=document.createElement('div');bwrap.style.cssText='margin-top:14px;display:flex;gap:10px;justify-content:center';var cpb=document.createElement('button');cpb.textContent='\u{1F4CB} Copy Sample Numbers';cpb.style.cssText='padding:12px 24px;background:%234caf50;color:%23fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:Segoe UI,Arial,sans-serif';cpb.onclick=function(){ta.select();document.execCommand(%22copy%22);cpb.textContent='\u2705 Copied!';cpb.style.background='%23388e3c';setTimeout(function(){cpb.textContent='\u{1F4CB} Copy Sample Numbers';cpb.style.background='%234caf50'},2000)};bwrap.appendChild(cpb);var btn=document.createElement('button');btn.textContent='Close';btn.style.cssText='padding:12px 24px;background:%235b8aff;color:%23fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:Segoe UI,Arial,sans-serif';btn.onclick=function(){box.remove()};bwrap.appendChild(btn);box.appendChild(bwrap);document.body.appendChild(box);ta.select()}function fail(msg){d.style.borderColor='%23f44336';d.style.color='%23f44336';d.textContent='\u274c '+msg;setTimeout(function(){d.remove();st.remove()},4000)}var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=function(){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';var url=location.href;if(!url.includes('.pdf')&&!url.includes('$value')&&!url.includes('mergedPdf')){var f=document.querySelector('embed[type=%22application/pdf%22]');url=f?f.src:url}fetch(url,{credentials:'include'}).then(r=>r.arrayBuffer()).then(b=>pdfjsLib.getDocument({data:b}).promise).then(async p=>{var t='';for(var i=1;i<=p.numPages;i++){var pg=await p.getPage(i);var c=await pg.getTextContent();t+=c.items.map(x=>x.str).join(' ')+' '}var m=t.match(/S\d{9}/g);if(!m){fail('No sample numbers found');return}var u=[...new Set(m)];showResult(u)}).catch(function(e){fail('Error: '+e.message)})};document.head.appendChild(s)}())">&#129514; Sample # Grabber</a>
+      </div>
+      <div class="hint">&#8593; Click and drag the blue button up to your bookmarks bar and drop it there.<br>
+      If you don't see the bookmarks bar, press <code>Ctrl+Shift+B</code> to show it.</div>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="step-text">Open an <strong>SAP LSR PDF</strong> in Chrome.</div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div class="step-text">Click <strong>Sample # Grabber</strong> in your bookmarks bar.<br>
+    It scans the PDF, finds all sample numbers, removes duplicates, and <strong>shows them on screen already selected</strong>.</div>
+  </div>
+  <div class="step">
+    <div class="num">4</div>
+    <div class="step-text">Press <code>Ctrl+C</code> to copy, then paste (<code>Ctrl+V</code>) into the batch section of <strong>ZLO01</strong> &#8212; done.</div>
+  </div>
+
+  <hr>
+
+  <div class="note">
+    <strong>Requirements:</strong><br>
+    &#8226; Must be run on an SAP PDF open in Chrome<br>
+    &#8226; Only needs to be installed once &#8212; it stays in your bookmarks bar<br>
+    &#8226; Finds sample numbers matching the pattern S + 9 digits (e.g. S000123456)
+  </div>
+  <hr>
+  <div style="text-align:center;padding-top:4px;">
+    <a href="dashboard.html" class="back-btn">&#8592; Back to Receiving Tools</a>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+# Every pull request gets its own temporary preview address on Firebase.
+# The address is posted as a comment on the pull request. Nothing goes live.
+name: Preview on Firebase
+on: pull_request
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+jobs:
+  preview:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_EC_RECEIVING }}
+          projectId: ec-receiving
+          expires: 7d

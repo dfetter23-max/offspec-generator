@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LSR Grabber v5 — Install</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ee;
+  --paper: #fbfaf6;
+  --ink: #14171c;
+  --muted: #5d6470;
+  --line: #d8d3c4;
+  --accent: #1a4480;
+  --accent-soft: #e6ecf5;
+  --warn: #b85c00;
+  --good: #1f7a3f;
+  --code-bg: #1a1d23;
+  --code-ink: #e6e1d4;
+  --code-muted: #8a8678;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 28px 96px;
+}
+
+.banner {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 36px;
+}
+.banner h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.banner .ver {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+.banner .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.lede {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 64ch;
+  margin: 0 0 40px;
+}
+
+section { margin-bottom: 44px; }
+
+h2 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.install-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 28px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 28px;
+  align-items: center;
+}
+@media (max-width: 640px) {
+  .install-card { grid-template-columns: 1fr; }
+}
+.install-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+.install-card .desc {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.install-card .desc kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #fff;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+}
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.drag-link {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: grab;
+  border: 1px solid var(--accent);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  box-shadow: 0 2px 0 #0d2347;
+}
+.drag-link:hover { transform: translateY(-1px); box-shadow: 0 3px 0 #0d2347; }
+.drag-link:active { cursor: grabbing; transform: translateY(1px); box-shadow: 0 1px 0 #0d2347; }
+
+.copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  padding: 13px 18px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.copy-btn:hover { background: var(--ink); color: var(--paper); }
+.copy-btn.copied { background: var(--good); color: #fff; border-color: var(--good); }
+
+ol.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+ol.steps li {
+  counter-increment: step;
+  padding: 14px 0 14px 44px;
+  position: relative;
+  border-bottom: 1px solid var(--line);
+}
+ol.steps li:last-child { border-bottom: none; }
+ol.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  width: 28px;
+  height: 28px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.changes {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 14px 24px;
+  align-items: baseline;
+}
+@media (max-width: 540px) { .changes { grid-template-columns: 1fr; gap: 4px; } }
+.changes .case {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 3px 8px;
+  border-radius: 3px;
+  align-self: start;
+  white-space: nowrap;
+}
+.changes .what { font-size: 14px; color: var(--ink); }
+
+details.code-drop {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  overflow: hidden;
+}
+details.code-drop summary {
+  cursor: pointer;
+  padding: 14px 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--muted);
+  user-select: none;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+details.code-drop summary::-webkit-details-marker { display: none; }
+details.code-drop summary::after {
+  content: '▸';
+  font-size: 11px;
+  transition: transform 0.15s;
+}
+details.code-drop[open] summary::after { transform: rotate(90deg); }
+pre.code {
+  margin: 0;
+  padding: 16px 18px;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  overflow-x: auto;
+  max-height: 360px;
+  border-top: 1px solid var(--line);
+  white-space: pre;
+  word-break: keep-all;
+}
+
+footer {
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="banner">
+    <h1>LSR Grabber</h1>
+    <span class="ver">v5</span>
+    <span class="tag">universal flow — popup-blocker safe</span>
+  </div>
+
+  <p class="lede">
+    Bookmarklet that reads SAP Load Summary Reports and forwards the structured data to
+    <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">ec-receiving.web.app</code>.
+    v5 is a <strong>thin loader</strong> that pulls the latest extractor at click time —
+    so any future fixes ship without you re-installing.
+    Adds a persistent overlay with a <strong>clickable "Open Offspec Generator" button</strong>
+    (so popup blockers no longer silently kill it), a <strong>file-picker fallback</strong>
+    for when the in-tab read can't see the PDF, and a copyable diagnostic log when something
+    still doesn't work.
+  </p>
+
+  <section>
+    <h2>Install</h2>
+    <div class="install-card">
+      <div>
+        <div class="label">// drag the button to your bookmarks bar</div>
+        <div class="btn-row">
+          <a class="drag-link" href="javascript:(function(){try{var o=document.getElementById(%27__lsrgrab_root_v5%27);if(o)o.remove();var s=document.createElement(%27script%27);s.src=%27https://ec-receiving.web.app/js/lsr-grabber.js?_=%27+Date.now();s.onerror=function(){alert(%27LSR Grabber: could not load extractor from ec-receiving.web.app. Check your network/firewall.%27);};document.head.appendChild(s);}catch(e){alert(%27LSR Grabber bootstrap failed: %27+e.message);}})();" onclick="return false;">★ LSR Grabber v5</a>
+          <button class="copy-btn" id="copyBtn" type="button">
+            <span id="copyLabel">Copy code instead</span>
+          </button>
+        </div>
+        <p class="desc">
+          If your browser hides the bookmarks bar, press
+          <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to show it, then drag.
+          Or use <em>Copy code instead</em> and paste into a new bookmark&apos;s URL field.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How to use</h2>
+    <ol class="steps">
+      <li>Open an LSR or Validation Error Report PDF in a browser tab — or skip ahead and just click the bookmarklet from any page; an overlay will appear with a <strong>Pick PDF from disk</strong> button as a fallback.</li>
+      <li>Click the <strong>LSR Grabber v5</strong> bookmark.</li>
+      <li>The dark overlay in the top-right shows progress. When parsing finishes, click <strong>→ Open Offspec Generator</strong> in the overlay. (Auto-open also fires when popups are allowed.)</li>
+      <li>If the in-tab read fails or hangs, click <strong>Pick PDF from disk</strong> in the same overlay and choose the file. Same result — no bookmarklet reinstall needed for any future fix.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>What v5 fixes</h2>
+    <div class="changes">
+      <span class="case">popup-blocker safe</span>
+      <span class="what">The v4 bookmarklet relied on <code>window.open()</code> as its only output. Some Chrome installs silently block that, so the extraction would finish invisibly. v5 shows a persistent overlay with a real <code>&lt;a target="_blank"&gt;</code> button — your click counts as user activation, bypassing popup blocking.</span>
+
+      <span class="case">file-picker fallback</span>
+      <span class="what">If the in-tab PDF can't be read (Adobe/Foxit extension hijacked the viewer, the PDF was downloaded instead of viewed, SAP auth blocked the fetch, etc.), the overlay always shows a <strong>Pick PDF from disk</strong> button. Pick the saved PDF — same parser runs.</span>
+
+      <span class="case">10-second timeout</span>
+      <span class="what">If <code>pdf.js getDocument()</code> hangs (auth challenge, slow PDF, weird wrapper), v5 stops waiting after 10 s and surfaces the failure instead of the indicator just staying forever.</span>
+
+      <span class="case">multi-CDN pdf.js</span>
+      <span class="what">If <code>cdnjs.cloudflare.com</code> is blocked by a corporate firewall, v5 falls back to <code>jsdelivr</code> and then <code>unpkg</code> before giving up.</span>
+
+      <span class="case">clipboard backup</span>
+      <span class="what">Parsed JSON is also written to the clipboard automatically. If the overlay button doesn't open the receiving app, the user can still hit <strong>Paste from LSR</strong> on the dashboard.</span>
+
+      <span class="case">copy-paste diagnostics</span>
+      <span class="what">Failed extractions show a collapsible log with timing, errors, and UA. Click <strong>Copy log</strong> and send it back — no more "it just didn't do anything" with no clues.</span>
+
+      <span class="case">thin-loader bookmarklet</span>
+      <span class="what">The bookmarklet itself is now ~250 bytes. The real extractor lives at <code>ec-receiving.web.app/js/lsr-grabber.js</code>, so future fixes ship instantly — nobody needs to re-drag the bookmark.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Source (read-only)</h2>
+    <details class="code-drop">
+      <summary><span>Inspect bookmarklet payload (~250&nbsp;bytes — loads the extractor from ec-receiving.web.app)</span></summary>
+<pre class="code" id="srcView">javascript:(function(){try{var o=document.getElementById(&#x27;__lsrgrab_root_v5&#x27;);if(o)o.remove();var s=document.createElement(&#x27;script&#x27;);s.src=&#x27;https://ec-receiving.web.app/js/lsr-grabber.js?_=&#x27;+Date.now();s.onerror=function(){alert(&#x27;LSR Grabber: could not load extractor from ec-receiving.web.app. Check your network/firewall.&#x27;);};document.head.appendChild(s);}catch(e){alert(&#x27;LSR Grabber bootstrap failed: &#x27;+e.message);}})();</pre>
+    </details>
+  </section>
+
+  <footer>
+    <span>tradebe / off-spec tools</span>
+    <span>built 2026-05-13</span>
+  </footer>
+
+</div>
+
+<script>
+const BM = "javascript:(function(){try{var o=document.getElementById('__lsrgrab_root_v5');if(o)o.remove();var s=document.createElement('script');s.src='https://ec-receiving.web.app/js/lsr-grabber.js?_='+Date.now();s.onerror=function(){alert('LSR Grabber: could not load extractor from ec-receiving.web.app. Check your network/firewall.');};document.head.appendChild(s);}catch(e){alert('LSR Grabber bootstrap failed: '+e.message);}})();";
+
+const copyBtn = document.getElementById('copyBtn');
+const copyLabel = document.getElementById('copyLabel');
+copyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(BM);
+    copyBtn.classList.add('copied');
+    copyLabel.textContent = 'Copied  ✓';
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyLabel.textContent = 'Copy code instead';
+    }, 1800);
+  } catch (e) {
+    // Fallback: select the source view and let the user copy manually
+    const sel = window.getSelection();
+    const range = document.createRange();
+    const view = document.getElementById('srcView');
+    view.parentElement.open = true;
+    range.selectNodeContents(view);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    copyLabel.textContent = 'Press Ctrl-C';
+  }
+});
+
+// Make the drag-link's href identical to the bookmarklet at runtime too,
+// in case the static href in HTML got encoding-mangled by anything intermediate.
+document.querySelector('.drag-link').setAttribute('href', BM);
+</script>
+</body>
+</html>

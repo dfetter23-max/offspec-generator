@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offspec Lookup Tool</title>
+<link rel="stylesheet" href="css/lookup.css">
+</head>
+<body>
+
+<div id="fbLoadStatus">⬤ Connecting...</div>
+
+<header>
+  <div class="hazard-icon"></div>
+  <div class="header-text">
+    <h1>Offspec Lookup</h1>
+    <p>HAZARDOUS WASTE PROCESS CODE REFERENCE</p>
+  </div>
+  <div style="flex:1;display:flex;align-items:center;justify-content:center;">
+    <button class="no-sample-btn" id="noSampleBtn">NO SAMPLE LIST</button>
+    <button class="flash-btn" id="flashBtn">FLASH</button>
+  </div>
+  <div class="header-right">
+    <div>SELECT A PROCESS CODE → VIEW CONDITIONS → FIND OFFSPEC</div>
+    <div id="adminArea" style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;letter-spacing:0.5px;">Unlock to edit all entries</span>
+      <button id="lockBtn" class="lock-state-btn active" style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 14px;background:transparent;border:1px solid;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;">🔒 LOCKED</button>
+      <button id="unlockBtn" class="lock-state-btn" style="font-family:'Share Tech Mono',monospace;font-size:13px;padding:5px 14px;background:transparent;border:1px solid;border-radius:4px;cursor:pointer;letter-spacing:1px;transition:all 0.2s;">🔓 UNLOCKED</button>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="left-panel">
+    <div class="search-area">
+      <label>Search Process Codes</label>
+      <div class="search-box">
+        <input type="text" id="codeSearch" placeholder="Type code (e.g. LF, VA, RT2...)">
+        <button class="clear-btn" id="clearSearch">✕</button>
+      </div>
+    </div>
+    <div class="code-list" id="codeList"></div>
+    <button class="add-code-btn admin-only" id="addCodeBtn">+ ADD RULE TO EXISTING CODE</button>
+    <button class="add-code-btn admin-only" id="newCodeBtn" style="margin-top:0">+ CREATE NEW PROCESS CODE</button>
+  </div>
+
+  <div class="right-panel">
+    <div id="rightContent">
+      <div class="empty-state" style="height:calc(100vh - 80px)">
+        <div class="big-arrow">←</div>
+        <p>SELECT A PROCESS CODE</p>
+        <p style="opacity:0.5">TO VIEW OFFSPEC CONDITIONS</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">ADD RULE</h3>
+    <div>
+      <label>CONDITION</label>
+      <textarea id="modalCondition" rows="2" placeholder="e.g. High Halogen (40-100)"></textarea>
+    </div>
+    <div>
+      <label>ACTION / OFFSPEC TO</label>
+      <input type="text" id="modalAction" placeholder="e.g. LI  or  Reprofile  or  Raise BTUs">
+    </div>
+    <div class="modal-btns">
+      <button class="delete-code-btn" id="deleteCodeBtn" style="display:none">DELETE ENTIRE CODE</button>
+      <button class="btn-cancel" id="modalCancel">CANCEL</button>
+      <button class="btn-save" id="modalSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD RULE TO EXISTING CODE MODAL -->
+<div class="modal-overlay" id="codeModalOverlay">
+  <div class="modal">
+    <h3 id="codeModalTitle">ADD RULE TO CODE</h3>
+    <div>
+      <label>SELECT PROCESS CODE</label>
+      <select id="codeModalSelect" style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:10px 14px;color:#fff;font-family:'Barlow',sans-serif;font-size:20px;outline:none;direction:ltr;"></select>
+    </div>
+    <div>
+      <label>CONDITION</label>
+      <textarea id="codeModalCondition" rows="2" placeholder="e.g. High Halogen (40-100)"></textarea>
+    </div>
+    <div>
+      <label>ACTION / OFFSPEC TO</label>
+      <input type="text" id="codeModalAction" placeholder="e.g. LI  or  Reprofile  or  Raise BTUs">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="codeModalCancel">CANCEL</button>
+      <button class="btn-save" id="codeModalSave">ADD RULE</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT DESCRIPTION MODAL -->
+<div class="modal-overlay" id="editDescModalOverlay">
+  <div class="modal">
+    <h3 id="editDescModalTitle">EDIT DESCRIPTION</h3>
+    <div>
+      <label>CODE NAME</label>
+      <input type="text" id="editCodeNameInput" placeholder="e.g. LF or SF / DF" dir="ltr">
+    </div>
+    <div>
+      <label>DESCRIPTION</label>
+      <input type="text" id="editDescInput" placeholder="e.g. LIQUID FUEL" dir="ltr">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="editDescCancel">CANCEL</button>
+      <button class="btn-save" id="editDescSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE NEW PROCESS CODE MODAL -->
+<div class="modal-overlay" id="newCodeModalOverlay">
+  <div class="modal">
+    <h3>CREATE NEW PROCESS CODE</h3>
+    <div>
+      <label>PROCESS CODE (required)</label>
+      <input type="text" id="newCodeName" placeholder="e.g. LF  or  RT2  or  SF / DF">
+    </div>
+    <div>
+      <label>DESCRIPTION (optional — can edit later)</label>
+      <input type="text" id="newCodeDesc" placeholder="e.g. Liquid Fuel">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="newCodeCancel">CANCEL</button>
+      <button class="btn-save" id="newCodeSave">CREATE</button>
+    </div>
+  </div>
+</div>
+
+<!-- NO SAMPLE LIST MODAL -->
+<div class="modal-overlay" id="noSampleModalOverlay">
+  <div class="modal" style="max-width:700px">
+    <h3 style="color:var(--red);font-size:32px;letter-spacing:3px;border-bottom:2px solid var(--red);padding-bottom:12px;margin-bottom:16px">NO SAMPLE LIST</h3>
+    <div style="column-count:3;column-gap:20px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:600;letter-spacing:1px;line-height:1.6;color:var(--text)">
+      <div>AF1-3</div>
+      <div>AINC</div>
+      <div>ALT</div>
+      <div>BNLPD</div>
+      <div>BNLPS</div>
+      <div>BNLPN</div>
+      <div>BNZF</div>
+      <div>BR41</div>
+      <div>BSTR</div>
+      <div>BT</div>
+      <div>ER1-6</div>
+      <div>DP</div>
+      <div>ER</div>
+      <div>FT</div>
+      <div>FR1-3</div>
+      <div>LH1-5</div>
+      <div>LPS</div>
+      <div>LPO</div>
+      <div>LLI</div>
+      <div>LPMD</div>
+      <div>LPLR</div>
+      <div>LPER</div>
+      <div>LPEQD</div>
+      <div>LP1-10</div>
+      <div>LX1-3***</div>
+      <div>LA6</div>
+      <div>LPLEX</div>
+      <div>LPMD</div>
+      <div>LPR</div>
+      <div>MACRO</div>
+      <div>NI</div>
+      <div>NR</div>
+      <div>NJ1-4</div>
+      <div>NSMT,</div>
+      <div>NEMT</div>
+      <div>NX1-4***</div>
+      <div>PCBIB,</div>
+      <div>PCBI4A</div>
+      <div>RZV1</div>
+      <div>WR, WRPB</div>
+    </div>
+    <div style="margin-top:14px;font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--accent);letter-spacing:0.5px;">*** With D007 or D009, Q and send to Q Manager</div>
+    <div class="modal-btns" style="margin-top:20px">
+      <button class="btn-cancel" id="noSampleClose">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLASH POINT ERROR MODAL -->
+<div class="modal-overlay" id="flashModalOverlay">
+  <div class="modal" style="max-width:750px">
+    <h3 style="color:var(--accent);font-size:32px;letter-spacing:3px;border-bottom:2px solid var(--accent);padding-bottom:12px;margin-bottom:16px">FLASH POINT ERROR</h3>
+    <div style="display:flex;gap:30px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;letter-spacing:1px;line-height:1.6;color:var(--text)">
+      <div style="flex:1">
+        <div style="color:var(--accent);font-size:14px;font-family:'Share Tech Mono',monospace;margin-bottom:10px;letter-spacing:2px;">IF PROCESS CODE IS NOT ON THIS LIST, CHANGE FLASHPOINT IN ANALYTICAL TO 141:</div>
+        <div style="display:flex;gap:30px;">
+          <div>
+            <div>NM</div>
+            <div>SM</div>
+            <div>LM</div>
+            <div>NTA</div>
+            <div>STA</div>
+          </div>
+          <div>
+            <div>LT</div>
+            <div>LA1</div>
+            <div>NA1</div>
+            <div>XM</div>
+            <div>XMH</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-size:15px;color:var(--red);font-family:'Share Tech Mono',monospace;letter-spacing:0.5px;">If D002 required, move to HAZ, but not re-profiled</div>
+      </div>
+      <div style="flex:1;border-left:1px solid var(--border);padding-left:30px;">
+        <div style="color:var(--accent);font-size:14px;font-family:'Share Tech Mono',monospace;margin-bottom:10px;letter-spacing:2px;">NON-HAZ THAT SHOULD NEVER FLASH:</div>
+        <div>
+          <div>LE1-3</div>
+          <div>NE1-3</div>
+          <div>SE1-3</div>
+          <div>LS</div>
+          <div>LW</div>
+          <div>NS</div>
+          <div>RO</div>
+          <div>SS</div>
+          <div>LSISO</div>
+        </div>
+        <div style="margin-top:16px;font-size:15px;color:var(--red);font-family:'Share Tech Mono',monospace;letter-spacing:0.5px;">*** If these flash, re-profile.</div>
+      </div>
+    </div>
+    <div class="modal-btns" style="margin-top:20px">
+      <button class="btn-cancel" id="flashClose">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/lookup.js"></script>
+</body>
+</html>

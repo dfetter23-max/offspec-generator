@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gen-Data Off-Spec — Add to Bookmarks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f3ee;
+  --paper: #fbfaf6;
+  --ink: #14171c;
+  --muted: #5d6470;
+  --line: #d8d3c4;
+  --accent: #1a4480;
+  --accent-soft: #e6ecf5;
+  --warn: #b85c00;
+  --good: #1f7a3f;
+  --code-bg: #1a1d23;
+  --code-ink: #e6e1d4;
+  --code-muted: #8a8678;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 28px 96px;
+}
+
+.banner {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-bottom: 18px;
+  border-bottom: 2px solid var(--ink);
+  margin-bottom: 36px;
+}
+.banner h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.banner .ver {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 3px 8px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+}
+.banner .tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.lede {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 66ch;
+  margin: 0 0 40px;
+}
+
+section { margin-bottom: 44px; }
+
+h2 {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 16px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.install-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 28px;
+}
+.install-card .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+}
+.install-card .desc {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 14px;
+  line-height: 1.55;
+}
+.install-card .desc kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #fff;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+}
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+.drag-link {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: grab;
+  border: 1px solid var(--accent);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+  box-shadow: 0 2px 0 #0d2347;
+}
+.drag-link:hover { transform: translateY(-1px); box-shadow: 0 3px 0 #0d2347; }
+.drag-link:active { cursor: grabbing; transform: translateY(1px); box-shadow: 0 1px 0 #0d2347; }
+
+.open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  padding: 13px 18px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.open-btn:hover { background: var(--ink); color: var(--paper); }
+.open-btn.copied { background: var(--good); color: #fff; border-color: var(--good); }
+
+.note {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--ink);
+  margin-top: 20px;
+}
+.note strong { color: var(--accent); }
+
+ol.steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: step;
+}
+ol.steps li {
+  counter-increment: step;
+  padding: 14px 0 14px 44px;
+  position: relative;
+  border-bottom: 1px solid var(--line);
+}
+ol.steps li:last-child { border-bottom: none; }
+ol.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  width: 28px;
+  height: 28px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+ol.steps li kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #fff;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+}
+
+.feats {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 14px 24px;
+  align-items: baseline;
+}
+@media (max-width: 540px) { .feats { grid-template-columns: 1fr; gap: 4px; } }
+.feats .case {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 3px 8px;
+  border-radius: 3px;
+  align-self: start;
+  white-space: nowrap;
+}
+.feats .what { font-size: 14px; color: var(--ink); }
+
+footer {
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="banner">
+    <h1>Gen-Data Off-Spec</h1>
+    <span class="ver">v2</span>
+    <span class="tag">full-page tool — not a bookmarklet</span>
+  </div>
+
+  <p class="lede">
+    An all-in-one off-spec generator. Fill the manifest header, tap the issue(s),
+    and it writes a finished OFFSPEC <strong>.xlsx into your real template</strong>
+    (logo, borders, and all three tabs preserved) — plus a built-in
+    <strong>Notification Builder</strong> for the matching customer/CSR message.
+    Unlike the LSR Grabber, this isn't a <code style="font-family:'JetBrains Mono',monospace;font-size:13px;">javascript:</code>
+    bookmarklet you drag — it's a normal page you save to your bookmarks bar so it's one click away.
+  </p>
+
+  <section>
+    <h2>Add to your bookmarks bar</h2>
+    <div class="install-card">
+      <div class="label">// drag the button to your bookmarks bar — or open it and press Ctrl+D</div>
+      <div class="btn-row">
+        <a class="drag-link" href="Offspec-Generator.html">&#9881; Gen-Data Off-Spec</a>
+        <a class="open-btn" href="Offspec-Generator.html" target="_blank">Open the tool &#8599;</a>
+      </div>
+      <p class="desc">
+        This is a real link, so it bookmarks like any web page. Drag the blue button onto your
+        bookmarks bar, <em>or</em> click <em>Open the tool</em> and press
+        <kbd>Ctrl</kbd>+<kbd>D</kbd> &rarr; choose <strong>Bookmarks bar</strong> &rarr; Done.
+        If the bar is hidden, press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>B</kbd> to show it first.
+      </p>
+      <div class="note">
+        <strong>Note:</strong> the tool runs from <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">ec-receiving.web.app/Offspec-Generator.html</code>
+        once deployed. Bookmark that hosted URL (not a local file) so it stays current and works from any machine.
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What it does</h2>
+    <div class="feats">
+      <span class="case">writes your template</span>
+      <span class="what">Generates the OFFSPEC <code>.xlsx</code> straight into your real EC template — logo, borders, and all three tabs are preserved, so the output is ready to send, not a blank rebuild.</span>
+
+      <span class="case">tap-to-build issues</span>
+      <span class="what">Tap one or more issue buttons and the Miscellaneous text auto-fills with the right wording. Everything stays editable, and a <strong>live preview</strong> of the off-spec updates as you type.</span>
+
+      <span class="case">manifest header</span>
+      <span class="what">One place for Sales Order, Load #, received/current dates, manifest #, generator name, and optional generator site / mailing numbers.</span>
+
+      <span class="case">notification builder</span>
+      <span class="what">A second screen confirms details per issue and builds the matching notification, with a one-click <strong>Copy</strong> for the sales order number.</span>
+
+      <span class="case">editable mappings</span>
+      <span class="what">Adjust the Section code, Waste Stream #, and amend phrase behind each issue button, or reset to defaults — no code changes needed.</span>
+
+      <span class="case">EC / WI / TN</span>
+      <span class="what">Switch facility and initials in the header; the generated paperwork follows the selected site.</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>How to use</h2>
+    <ol class="steps">
+      <li>Click your <strong>Gen-Data Off-Spec</strong> bookmark to open the tool.</li>
+      <li>Pick the <strong>Facility</strong> and confirm your <strong>Initials</strong> in the top bar.</li>
+      <li>Fill the <strong>Manifest &amp; Header</strong> fields (Sales Order, Load #, dates, manifest, generator).</li>
+      <li>Tap the <strong>issue</strong> button(s). The Miscellaneous text auto-fills — edit it if needed and watch the live preview.</li>
+      <li>Click <strong>GENERATE OFFSPEC</strong> to download the finished <code>.xlsx</code> in your real template.</li>
+      <li>Hit the <strong>&#9660;</strong> arrow to drop into the <strong>Notification Builder</strong>, confirm details, and copy the sales order / notification text.</li>
+    </ol>
+  </section>
+
+  <footer>
+    <span>tradebe / off-spec tools</span>
+    <span>built 2026-06-30</span>
+  </footer>
+
+</div>
+</body>
+</html>

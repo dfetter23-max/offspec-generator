@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Material Quality Issue Analysis — Jan 2025–Apr 2026</title>
+<style>
+  :root {
+    --bg: #0c0f14;
+    --surface: #141820;
+    --border: #252d3a;
+    --text: #e2e4e9;
+    --muted: #8891a0;
+    --accent: #4ea8de;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Print button */
+  .action-bar {
+    position: fixed;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 100;
+    display: flex;
+    gap: 8px;
+  }
+  .action-btn {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+  }
+  .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .action-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .action-btn.primary:hover { background: #3a94c9; }
+  .action-btn svg { width: 15px; height: 15px; fill: currentColor; }
+
+  /* Header area */
+  .doc-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .doc-title {
+    font-size: 1.85rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.25;
+    margin-bottom: 0.35rem;
+  }
+
+  .doc-subtitle {
+    font-size: 1.05rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .doc-date {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 0.4rem;
+  }
+
+  .doc-source {
+    display: inline-block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.2rem 0.65rem;
+    letter-spacing: 0.02em;
+  }
+
+  /* Section headers */
+  .doc-body h2,
+  .doc-body .section-header {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .doc-body h3,
+  .doc-body .rec-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Body text */
+  .doc-body p {
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .doc-body em {
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  .doc-body strong {
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* Lists */
+  .doc-body ul, .doc-body ol {
+    margin: 0.5rem 0 1.25rem 1.5rem;
+  }
+
+  .doc-body li {
+    margin-bottom: 0.5rem;
+  }
+
+  .doc-body li p {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Tables */
+  .doc-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.75rem;
+    font-size: 0.88rem;
+    background: var(--surface);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .doc-body table tr:first-child td {
+    background: rgba(78, 168, 222, 0.1);
+    font-weight: 600;
+    color: #fff;
+    border-bottom: 2px solid var(--border);
+    font-size: 0.84rem;
+    text-transform: none;
+    letter-spacing: 0.01em;
+  }
+
+  .doc-body table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    vertical-align: top;
+  }
+
+  .doc-body table td:last-child {
+    border-right: none;
+  }
+
+  .doc-body table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .doc-body table tr:not(:first-child):hover {
+    background: rgba(78, 168, 222, 0.04);
+  }
+
+  /* Closing note */
+  .doc-body > p:last-child em {
+    display: block;
+    margin-top: 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 6px 6px 0;
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+
+  /* Print styles */
+  @media print {
+    :root {
+      --bg: #fff;
+      --surface: #fff;
+      --border: #d0d0d0;
+      --text: #1a1a1a;
+      --muted: #555;
+      --accent: #1a6fa0;
+    }
+
+    body {
+      background: #fff;
+      color: #1a1a1a;
+      font-size: 11pt;
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    .action-bar { display: none !important; }
+
+    .container { max-width: 100%; }
+
+    .doc-header { page-break-after: avoid; }
+
+    .doc-title { color: #1a1a1a; font-size: 18pt; }
+    .doc-subtitle { color: #444; }
+    .doc-date { color: #1a6fa0; }
+    .doc-source { background: #f5f5f5; border-color: #ccc; color: #555; }
+
+    .doc-body h2, .doc-body .section-header {
+      color: #1a1a1a;
+      border-bottom-color: #ccc;
+      page-break-after: avoid;
+    }
+
+    .doc-body h3, .doc-body .rec-header {
+      color: #1a6fa0;
+      page-break-after: avoid;
+    }
+
+    .doc-body strong { color: #1a1a1a; }
+
+    .doc-body table {
+      background: #fff;
+      border-color: #bbb;
+      page-break-inside: avoid;
+    }
+
+    .doc-body table tr:first-child td {
+      background: #f0f4f8;
+      color: #1a1a1a;
+      border-bottom-color: #999;
+    }
+
+    .doc-body table td {
+      border-color: #ccc;
+      padding: 4pt 6pt;
+    }
+
+    .doc-body > p:last-child em {
+      background: #f8f8f8;
+      border-left-color: #1a6fa0;
+      color: #444;
+    }
+
+    h2, h3, .section-header, .rec-header { page-break-after: avoid; }
+    table, ul, ol { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="action-bar">
+  <button class="action-btn" onclick="downloadDocx()" title="Download as Word document">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg>
+    Word
+  </button>
+  <button class="action-btn" onclick="openInGoogleDocs()" title="Open in Google Docs for editing">
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+    Google Docs
+  </button>
+  <button class="action-btn primary" onclick="window.print()" title="Print document">
+    <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+    Print
+  </button>
+</div>
+
+<script>
+function downloadDocx() {
+  // Download the original .docx file
+  var a = document.createElement('a');
+  a.href = 'Material_Quality_Analysis_2025-2026.docx';
+  a.download = 'Material_Quality_Analysis_2025-2026.docx';
+  a.click();
+}
+function openInGoogleDocs() {
+  // Get the current page URL for Google Docs import
+  var docUrl = window.location.origin + '/Material_Quality_Analysis_2025-2026.docx';
+  var gdocsUrl = 'https://docs.google.com/gview?url=' + encodeURIComponent(docUrl) + '&embedded=false';
+  window.open(gdocsUrl, '_blank');
+}
+</script>
+
+<div class="container">
+  <div class="doc-header">
+    <div class="doc-title">Material Quality Issue Analysis</div>
+    <div class="doc-subtitle">Tradebe USA — Operations / Receiving</div>
+    <div class="doc-date">January 2025 – April 2026 (16 months)</div>
+    <span class="doc-source">Source: SAP Quality Notification Extracts</span>
+  </div>
+
+  <div class="doc-body">
+    <h2>Executive Summary</h2>
+    <p>This report analyzes 3,048 SAP quality notifications created between January 2025 and April 2026. The 1,826 core notifications (excluding Awaiting Metals Results, UOM Rechecks, and Piece Counts) are analyzed for issue patterns, producer accountability, financial impact, and resolution performance.</p>
+    <p>Key findings: Raw notification counts overstate the problem at high-volume producers. When normalized by revenue, military facilities (NSA, Joint Base Andrews, Letterkenny) and university labs emerge as the true worst cost-to-serve accounts. LabPack notifications take 3.4× longer to resolve than CER (Drums), driven by Haz Code Issues. SC Pittsburgh resolves Haz Code Issues in 39 days—4× slower than SC East Chicago on the identical issue type. Resolution times spike seasonally in August and October–December, suggesting structural capacity gaps.</p>
+
+    <h2>Key Metrics</h2>
+    <table>
+      <tbody>
+        <tr><td><strong>Metric</strong></td><td><strong>Value</strong></td></tr>
+        <tr><td>Total Notifications</td><td><strong>3,048</strong></td></tr>
+        <tr><td>Core Analysis</td><td><strong>1,826 (59.9%)</strong></td></tr>
+        <tr><td>Awaiting Metals Results</td><td><strong>671 (22.0%)</strong></td></tr>
+        <tr><td>Piece Count / UOM Recheck</td><td><strong>551 (18.1%)</strong></td></tr>
+        <tr><td>Mean Resolution (Core)</td><td><strong>9.6 days</strong></td></tr>
+        <tr><td>Worst Quarter by Resolution</td><td><strong>Q4 2025: 13.7-day avg</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Core Issue Type Breakdown</h2>
+    <p>Physical and Chemical Analysis represent 59% of core volume. Haz Code Issues carry the longest resolution at 15.0 days average and represent the highest compliance risk.</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Issue Type</strong></td><td><strong>Count</strong></td><td><strong>% Core</strong></td><td><strong>Avg Days</strong></td><td><strong>Median</strong></td></tr>
+        <tr><td><strong>Physical Analysis</strong></td><td>548</td><td>30.0%</td><td>8.1</td><td>2.0</td></tr>
+        <tr><td><strong>Chemical Analysis</strong></td><td>528</td><td>28.9%</td><td>8.5</td><td>3.0</td></tr>
+        <tr><td><strong>Haz Code Issue</strong></td><td>285</td><td>15.6%</td><td><strong>15.0</strong></td><td>8.0</td></tr>
+        <tr><td><strong>Profile Issues</strong></td><td>266</td><td>14.6%</td><td>9.3</td><td>5.0</td></tr>
+        <tr><td><strong>Weight Discrepancy</strong></td><td>187</td><td>10.2%</td><td>9.2</td><td>6.0</td></tr>
+        <tr><td><strong>PCBs</strong></td><td>7</td><td>0.4%</td><td><strong>34.7</strong></td><td>22.0</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Financial Analysis: Cost-to-Serve</h2>
+    <p>Raw notification counts overstate the problem at high-volume producers. A producer generating $90K in revenue with 36 notifications is a very different situation than one generating $2,700 with 52 notifications. Normalizing by revenue reveals the true cost-to-serve outliers. Staff hours are estimated at 1.5 hours per Physical/Chemical/Weight notification and 3.0 hours per Haz Code/Profile notification.</p>
+    <p><em>Note: One Medline Industries notification (200281406) carried a Net Value of $13.48M—likely a SAP data artifact (order-level value in a line-item field, or a decimal error). This value has been replaced with Medline's median line-item value ($1,009) for purposes of this analysis. The raw data should be verified in SAP.</em></p>
+
+    <h3>Worst Cost-to-Serve Producers</h3>
+    <p>These producers generate the most notifications relative to the revenue they bring in. Military/government facilities dominate because their line-item values are often nominal while their lab pack and depack loads trigger extensive quality checks.</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Producer</strong></td><td><strong>Notifs</strong></td><td><strong>Revenue</strong></td><td><strong>Per $10K</strong></td><td><strong>Est. Hours</strong></td><td><strong>$/Hour</strong></td></tr>
+        <tr><td><strong>National Security Agency</strong></td><td>52</td><td>$2,711</td><td><strong>191.8</strong></td><td>~78 hrs</td><td><strong>$35/hr</strong></td></tr>
+        <tr><td><strong>Joint Base Andrews</strong></td><td>18</td><td>$2,249</td><td><strong>80.0</strong></td><td>~27 hrs</td><td>$83/hr</td></tr>
+        <tr><td><strong>Letterkenny Army Depot</strong></td><td>16</td><td>$3,469</td><td>46.1</td><td>~24 hrs</td><td>$145/hr</td></tr>
+        <tr><td><strong>Univar MN St. Paul</strong></td><td>18</td><td>$5,752</td><td>31.3</td><td>~34 hrs</td><td>$169/hr</td></tr>
+        <tr><td><strong>University of Chicago</strong></td><td>21</td><td>$7,342</td><td>28.6</td><td>~52 hrs</td><td>$140/hr</td></tr>
+        <tr><td><strong>SUNY at Buffalo</strong></td><td>25</td><td>$9,111</td><td>27.4</td><td>~64 hrs</td><td>$141/hr</td></tr>
+        <tr><td><strong>University of Illinois</strong></td><td>42</td><td>$17,935</td><td>23.4</td><td>~124 hrs</td><td>$144/hr</td></tr>
+        <tr><td><strong>Univar Commerce</strong></td><td>21</td><td>$11,800</td><td>17.8</td><td>~51 hrs</td><td>$231/hr</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Best Revenue-to-Problem Ratio (high-value, low-problem)</h3>
+    <p>For contrast, these producers generate significant revenue with minimal quality issues:</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Producer</strong></td><td><strong>Notifs</strong></td><td><strong>Revenue</strong></td><td><strong>Per $10K</strong></td><td><strong>$/Hour</strong></td></tr>
+        <tr><td><strong>US Industrial Technologies</strong></td><td>36</td><td>$90,235</td><td>4.0</td><td>$1,135/hr</td></tr>
+        <tr><td>Axalta Coating Systems USA LLC</td><td>21</td><td>$62,428</td><td>3.4</td><td>$1,486/hr</td></tr>
+        <tr><td>Daubert Chemical Avenue</td><td>20</td><td>$31,117</td><td>6.4</td><td>$943/hr</td></tr>
+        <tr><td>Heritage Environmental Services</td><td>16</td><td>$124,296</td><td>1.3</td><td>High</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Service Center Performance (Normalized)</h2>
+    <p>Raw notification counts make SC East Chicago (876) look like the worst performer, but it processes 60% of total revenue. When normalized per $100K revenue, SC East Chicago is actually one of the best-performing centers at 52.9 notifications per $100K. SC Chambersburg (214.6/$100K) and SC Newington (118.6/$100K) have the highest normalized rates, though Chambersburg resolves issues quickly (2.4-day average). SC Pittsburgh's 20.5-day average resolution is the worst by a wide margin.</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Service Center</strong></td><td><strong>Notifs</strong></td><td><strong>Revenue</strong></td><td><strong>Per $100K</strong></td><td><strong>Avg Days</strong></td><td><strong>Assessment</strong></td></tr>
+        <tr><td><strong>SC East Chicago</strong></td><td>876</td><td>$1,655,898</td><td>52.9</td><td>8.3</td><td>High vol, good rate + speed</td></tr>
+        <tr><td><strong>SC Pittsburgh</strong></td><td>121</td><td>$174,347</td><td>69.4</td><td><strong>20.5</strong></td><td>Slow resolution — investigate</td></tr>
+        <tr><td><strong>SC Newington</strong></td><td>81</td><td>$68,320</td><td>118.6</td><td>15.2</td><td>High rate + slow resolution</td></tr>
+        <tr><td><strong>SC Chambersburg</strong></td><td>261</td><td>$121,606</td><td><strong>214.6</strong></td><td>2.4</td><td>Highest rate but fast resolution</td></tr>
+        <tr><td><strong>SC Raleigh</strong></td><td>114</td><td>$171,617</td><td>66.4</td><td>15.1</td><td>Moderate rate, slow resolution</td></tr>
+        <tr><td><strong>SC Kansas City</strong></td><td>80</td><td>$156,507</td><td>51.1</td><td>10.2</td><td>Balanced</td></tr>
+        <tr><td><strong>SC Iowa</strong></td><td>51</td><td>$106,772</td><td>47.8</td><td>11.4</td><td>Best normalized rate</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Outliers &amp; Emerging Trends</h2>
+
+    <h3>SC Pittsburgh Haz Code Resolution Gap</h3>
+    <p>Haz Code Issues take an average of 39.0 days to resolve at SC Pittsburgh, compared to 10.3 days at SC East Chicago. This is not a producer mix issue—it's a process or staffing bottleneck at Pittsburgh specifically. Chemical Analysis shows a similar gap (13.6 vs. 6.4 days). This single center's slow resolution drags the overall Haz Code average from what would be ~10 days to 15 days.</p>
+
+    <h3>Seasonal Resolution Pattern</h3>
+    <p>Resolution times spike consistently in August (15.3-day average), October (12.9 days), November (15.2 days), and December (13.3 days). This pattern repeats across both years in the dataset. Summer vacation coverage and end-of-year holiday staffing are the likely drivers. Pre-holiday queue-clearing pushes or temporary staffing could smooth this.</p>
+
+    <h3>Axalta Trending Worse While Others Improve</h3>
+    <p>Axalta (both SAP entries combined) went from 15 notifications in H1 2025 to 31 in Q4 2025 + Q1 2026—a doubling. Meanwhile, the biggest prior offenders improved sharply: NSA dropped from 45 to 5, Univar Clearfield from 51 to 13, SUNY Buffalo from 14 to 5. Axalta appears to be the emerging problem and may also need its two SAP entries consolidated (same pattern as Boston Green Fuel in the paperwork data).</p>
+
+    <h3>Dual Paperwork + Material Offenders</h3>
+    <p>Several producers appear in both the paperwork notification dataset and the material quality dataset, meaning they're causing problems on both fronts. These accounts need a holistic corrective action conversation, not two separate ones:</p>
+    <ul>
+      <li><p>GFL Environmental: 48 total (14 paperwork + 34 material) — $43,912 material revenue</p></li>
+      <li><p>US Industrial Technologies: 41 total (5 pw + 36 mat) — $90,235 material revenue</p></li>
+      <li><p>EnviroServe: 32 total (13 pw + 19 mat) — $20,777 material revenue</p></li>
+      <li><p>Axalta (LLC entry): 37 total (2 pw + 35 mat) — $25,552 material revenue</p></li>
+      <li><p>University of Chicago: 22 total (1 pw + 21 mat) — $7,342 material revenue</p></li>
+      <li><p>Subaru of Indiana: 20 total (2 pw + 18 mat) — $14,818 material revenue</p></li>
+    </ul>
+
+    <h3>Profile Issues Quarterly Spike</h3>
+    <p>Profile Issues averaged 3.6 days resolution in Q2 2025, then spiked to 18.2 days in Q4 2025—a 5× increase. This drove the overall Q4 resolution spike. The Q4 profile backlog was concentrated in university lab pack accounts.</p>
+
+    <h2>Most Flagged Waste Profiles</h2>
+    <p>Lab pack profiles (ZP2, ZP, ZI, ZP1, ZIH) dominate the slowest-resolving profiles at 19–39 days average. Military depack profiles (ZV1 variants) have high volume but resolve in under 2 days.</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Waste Profile</strong></td><td><strong>Process Code</strong></td><td><strong>Count</strong></td><td><strong>Avg Days</strong></td><td><strong>Top Producer &amp; Primary Issue</strong></td></tr>
+        <tr><td><strong>1000194662</strong></td><td>ZV1</td><td><strong>38</strong></td><td>1.1</td><td>NSA (28) — Physical Analysis</td></tr>
+        <tr><td><strong>1000037788</strong></td><td>ZP2</td><td>23</td><td><strong>39.0</strong></td><td>Univ. Illinois (14) — Haz Code (17), Profile (6)</td></tr>
+        <tr><td><strong>1000037775</strong></td><td>ZP</td><td>16</td><td><strong>26.8</strong></td><td>Univ. Illinois (7) — Haz Code (10), Profile (6)</td></tr>
+        <tr><td><strong>1000226725</strong></td><td>ZV1</td><td>14</td><td>0.6</td><td>Def. Dist. Susquehanna (9) — Physical</td></tr>
+        <tr><td><strong>1000037682</strong></td><td>ZI</td><td>12</td><td><strong>32.1</strong></td><td>Univ. Illinois (3), Univ. Vermont (3) — Haz Code</td></tr>
+        <tr><td><strong>1000037776</strong></td><td>ZP1</td><td>9</td><td><strong>36.0</strong></td><td>Univ. Illinois (6) — Haz Code (8)</td></tr>
+        <tr><td><strong>1000558440</strong></td><td>XM2</td><td>8</td><td>12.1</td><td>Old Dominion Freight (8) — Chemical (8)</td></tr>
+        <tr><td><strong>1000532649</strong></td><td>RS2</td><td>8</td><td>3.4</td><td>Univar Clearfield (7) — Weight (5), Profile (3)</td></tr>
+      </tbody>
+    </table>
+
+    <h2>CER vs LabPack Resolution — Bulk Excluded</h2>
+    <p>CER (Drums) resolves in 6.7 days average. LabPack takes 22.8 days—3.4× slower. 62.4% of LabPack notifications exceed 10 days vs. 20.6% for CER. The gap is widest on Haz Code Issues (26.4 vs. 7.3 days, 3.6×). LabPack resolution spiked to 31.9 days in Q4 2025 before recovering to 11.0 in Q1 2026.</p>
+    <table>
+      <tbody>
+        <tr><td><strong>Issue Type</strong></td><td><strong>CER #</strong></td><td><strong>CER Avg</strong></td><td><strong>LP #</strong></td><td><strong>LP Avg</strong></td><td><strong>Ratio</strong></td><td></td></tr>
+        <tr><td><strong>Physical Analysis</strong></td><td>489</td><td>6.1d</td><td>58</td><td><strong>24.7d</strong></td><td><strong>4.0×</strong></td><td></td></tr>
+        <tr><td><strong>Chemical Analysis</strong></td><td>449</td><td>7.2d</td><td>65</td><td>19.1d</td><td><strong>2.7×</strong></td><td></td></tr>
+        <tr><td><strong>Haz Code Issue</strong></td><td>166</td><td>7.3d</td><td>115</td><td><strong>26.4d</strong></td><td><strong>3.6×</strong></td><td>Worst LP category</td></tr>
+        <tr><td><strong>Profile Issues</strong></td><td>209</td><td>6.6d</td><td>54</td><td>18.9d</td><td><strong>2.9×</strong></td><td></td></tr>
+        <tr><td><strong>Weight Discrepancy</strong></td><td>138</td><td>6.7d</td><td>37</td><td>18.6d</td><td><strong>2.8×</strong></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h2>Awaiting Metals Results</h2>
+    <p>671 notifications, 7.6-day average resolution (median 7.0). 5.4% exceeded 14 days. Q3 2025 was the worst quarter (10.0-day avg, 13.1% &gt;14d) before recovering in Q4. SC East Chicago (216) and SC Chambersburg (205) carry the bulk of metals volume. Military depots (Letterkenny 60, Tobyhanna 47) dominate the producer list. Top profiles: 1000393101 (NM2, 23), 1000053539 (LA1, 23), 1000197871 (LM1, 19).</p>
+
+    <h2>Production Impact: UOM Rechecks &amp; Piece Counts</h2>
+    <p>UOM Rechecks (153, avg 4.4d): XPO Logistics = 17% across four branches. Piece Counts (398, avg 2.8d): Advanced Environmental Services (15), Daubert Chemical (14), Sherwin-Williams Greensboro (12) are top offenders.</p>
+
+    <h2>Recommendations</h2>
+
+    <h3>1. Investigate SC Pittsburgh Resolution Bottleneck</h3>
+    <ul>
+      <li><p>Haz Code Issues take 39 days at Pittsburgh vs. 10 at East Chicago. This is the single largest resolution gap in the dataset. Determine whether it's lab turnaround, CSR responsiveness, or a process difference.</p></li>
+    </ul>
+
+    <h3>2. Lab Pack Profile Audit for Universities</h3>
+    <ul>
+      <li><p>Profiles 1000037788, 1000037775, 1000037682, and 1000037776 carry 26–39 day averages and are dominated by University of Illinois, SUNY Buffalo, and University of Chicago. A blanket audit could clear the top 4 slowest-resolving profiles.</p></li>
+    </ul>
+
+    <h3>3. Re-evaluate Low-Revenue / High-Problem Accounts</h3>
+    <ul>
+      <li><p>NSA generates $2,711 in revenue but consumes an estimated 78 staff hours. Joint Base Andrews: $2,249 revenue, ~27 hours. At $35–$83 per hour of staff time, these accounts may cost more to service than they earn. Renegotiate pricing or require pre-qualification improvements.</p></li>
+    </ul>
+
+    <h3>4. Holistic Corrective Action for Dual Offenders</h3>
+    <ul>
+      <li><p>GFL (48 total), US Industrial Tech (41), EnviroServe (32), and Axalta (37) appear in both paperwork and material datasets. Schedule combined corrective-action calls that address paperwork, profile, and material issues simultaneously.</p></li>
+    </ul>
+
+    <h3>5. Close the LabPack Resolution Gap</h3>
+    <ul>
+      <li><p>LabPack takes 3.4× longer than CER. Pre-qualifying lab pack waste codes before loads ship would reduce the most painful category. Investigate Q1 2026's recovery to 11.0 days and sustain it.</p></li>
+    </ul>
+
+    <h3>6. Address Seasonal Staffing Pattern</h3>
+    <ul>
+      <li><p>August (15.3d avg) and Oct–Dec (12.9–15.2d) consistently spike. Pre-holiday queue pushes or temporary staffing during these windows would smooth resolution curves.</p></li>
+    </ul>
+
+    <h3>7. Monitor Axalta Trend</h3>
+    <ul>
+      <li><p>Axalta doubled from H1 2025 to Q4/Q1 2026 while other top producers improved. Consider consolidating the two SAP entries and scheduling a profile/quality review before the trend worsens.</p></li>
+    </ul>
+
+    <p><em>This analysis covers January 2025 through April 2026. Revenue-weighted rankings should be recalculated quarterly as account values shift. The SC Pittsburgh investigation and university profile audit are the highest-impact, most immediately actionable items.</em></p>
+  </div>
+</div>
+
+</body>
+</html>

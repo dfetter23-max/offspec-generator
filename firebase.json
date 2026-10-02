@@ -1,0 +1,65 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.docx",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          },
+          {
+            "key": "Content-Disposition",
+            "value": "attachment"
+          }
+        ]
+      },
+      {
+        "source": "**/*.js",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      }
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/Offspec-Generator.v67.html",
+        "destination": "/Offspec-Generator.html",
+        "type": 301
+      },
+      {
+        "source": "/Offspec-Generator.v9.html",
+        "destination": "/Offspec-Generator.html",
+        "type": 301
+      },
+      {
+        "source": "/Offspec-Generator.v*.html",
+        "destination": "/Offspec-Generator.html",
+        "type": 301
+      }
+    ]
+  }
+}

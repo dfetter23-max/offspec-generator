@@ -1,0 +1,8 @@
+node_modules/
+.firebase/
+_backups/
+.fuse_hidden*
+*.log
+firebase-debug.log
+.DS_Store
+Thumbs.db

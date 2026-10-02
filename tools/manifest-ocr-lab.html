@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Manifest OCR Lab</title>
+<style>
+:root{--bg:#1d232b;--card:#262e38;--ipt:#1a2028;--line:#3a4552;--ink:#e8edf2;--mut:#9aa7b3;--accent:#26b0b0;--ok:#3fbf7f;--warn:#e0913a;--bad:#e05a5a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,sans-serif}
+header{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);background:#20272f;position:sticky;top:0;z-index:2}
+header h1{font-size:17px;margin:0;font-weight:800}
+.badge{font-size:11px;font-weight:800;color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 8px}
+#status{margin-left:auto;font-size:12px;color:var(--mut)}
+#status.busy{color:var(--accent)}
+main{max-width:1280px;margin:0 auto;padding:18px}
+.drop{border:2px dashed var(--accent);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;background:linear-gradient(180deg,#2a333e,#232a33)}
+.drop:hover,.drop.over{border-style:solid;background:rgba(38,176,176,.10)}
+.drop b{font-size:16px;display:block;margin-bottom:4px}
+.drop span{color:var(--mut);font-size:12px}
+.note{color:var(--mut);font-size:12px;margin:10px 2px 0}
+.result{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:18px;overflow:hidden}
+.rhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.rhead .name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:40ch}
+.pill{font-size:11px;font-weight:800;border-radius:20px;padding:2px 9px;background:#33404d}
+.pill.fiori{background:#1f4f6e}.pill.sapgui{background:#2e5a46}.pill.unknown{background:#6e3a1f}
+.rhead .grow{flex:1}
+button{font:inherit;font-size:12px;font-weight:700;color:var(--ink);background:#33404d;border:1px solid var(--line);border-radius:6px;padding:5px 10px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+.rbody{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,1fr);gap:0}
+.shot{position:relative;border-right:1px solid var(--line);background:var(--ipt);align-self:start;overflow:auto;max-height:560px}
+.shot canvas{display:block;width:100%;height:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td{padding:6px 12px;border-bottom:1px solid #313b46;vertical-align:top}
+td:first-child{color:var(--mut);width:42%;white-space:nowrap}
+td.v{font-family:ui-monospace,Consolas,monospace;font-weight:600;word-break:break-word}
+td.v.empty{color:var(--bad);font-family:inherit;font-weight:700}
+td.v.blank{color:var(--warn)}
+tr.extra td{opacity:.7}
+details{padding:8px 12px 12px}
+summary{cursor:pointer;color:var(--mut);font-size:12px;font-weight:700}
+pre{white-space:pre-wrap;font:12px/1.4 ui-monospace,Consolas,monospace;background:var(--ipt);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:260px;overflow:auto}
+.err{color:var(--bad);padding:12px 14px}
+@media (max-width:820px){.rbody{grid-template-columns:1fr}.shot{border-right:0;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Manifest OCR Lab</h1><span class="badge">parser v1 · SAP GUI + Fiori</span>
+  <span id="status">Model loads on first image</span>
+</header>
+<main>
+  <div class="drop" id="drop" tabindex="0">
+    <b>Paste (Ctrl+V), drop, or click to choose manifest screenshots</b>
+    <span>Classic SAP GUI "Edit Manifest" or Fiori "Manifest" generator tab. Several at once is fine.</span>
+  </div>
+  <input type="file" id="file" accept="image/*" multiple hidden>
+  <p class="note">Nothing is uploaded. OCR runs in this browser with the same PaddleOCR package the generator uses. The first image is slow while the model downloads. Green boxes are field labels and blue boxes are text the parser used.</p>
+  <div id="results"></div>
+</main>
+
+<script>
+/* manifest-ocr.js — layout-aware SAP manifest screenshot parser (v1.1, 2026-10-02)
+ *
+ * Reads PaddleOCR box results (text + position) instead of one flattened string,
+ * so values are taken from the box beside / below each label rather than from
+ * whatever text happens to follow it in reading order.
+ *
+ * Layouts:
+ *   'sapgui' - classic SAP GUI "Edit Manifest" screen (light-blue background)
+ *   'fiori'  - Fiori launchpad "Manifest - #########" page (white background)
+ *
+ * Output keys match the generator's existing parseSAP():
+ *   salesOrder, manifest, genName, genSite, genMail, id, erp, phone, siteAddr, mailAddr
+ * plus extras the review panel may ignore: sapManifest, printedName, signDate, layout.
+ *
+ * Usage:
+ *   const {text, boxes} = await ManifestOCR.recognize(service, canvas);
+ *   const data = ManifestOCR.parse(boxes, text);
+ */
+(function(root){
+  'use strict';
+
+  // ---------- OCR settings ----------
+  // The PaddleOCR detector defaults to maxSideLength 640. A ~1900px SAP screenshot
+  // gets shrunk to a third of its size before detection, so small field text is lost
+  // or merged. These settings keep the detector at screen resolution and give the
+  // recognizer a 1.5x upscaled image to read from.
+  const OCR_SETTINGS = { scale: 1.5, maxScaledSide: 3000, detectionMaxSide: 1920 };
+
+  function prepareCanvas(img){
+    const w0 = img.naturalWidth || img.width, h0 = img.naturalHeight || img.height;
+    const scale = Math.min(OCR_SETTINGS.scale, OCR_SETTINGS.maxScaledSide / Math.max(w0, h0));
+    const s = Math.max(1, scale);
+    const c = document.createElement('canvas');
+    c.width = Math.round(w0 * s); c.height = Math.round(h0 * s);
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  function serviceOptions(model){
+    return {
+      model,
+      detection: { maxSideLength: OCR_SETTINGS.detectionMaxSide },
+      recognition: { strategy: 'per-box' },
+      processing: { engine: 'canvas-native' },
+      debugging: { debug: false, verbose: false }
+    };
+  }
+
+  async function recognize(service, canvas){
+    const r = await service.recognize(canvas, { flatten: true, strategy: 'per-box', noCache: true });
+    const boxes = (r.results || []).map(b => ({
+      t: String(b.text || '').trim(), c: b.confidence,
+      x: b.box.x, y: b.box.y, w: b.box.width, h: b.box.height
+    })).filter(b => b.t);
+    return { text: boxesToText(boxes), boxes };
+  }
+
+  // Rebuild readable line-by-line text from boxes (for the raw-text panel and text fallback).
+  function boxesToText(boxes){
+    const rows = groupRows(boxes);
+    return rows.map(r => r.map(b => b.t).join('  ')).join('\n');
+  }
+
+  // ---------- geometry helpers ----------
+  const cy = b => b.y + b.h / 2;
+  const right = b => b.x + b.w;
+  const bottom = b => b.y + b.h;
+  function sameRow(a, b){
+    const top = Math.max(a.y, b.y), bot = Math.min(bottom(a), bottom(b));
+    return (bot - top) >= 0.45 * Math.min(a.h, b.h);
+  }
+  function groupRows(boxes){
+    const sorted = [...boxes].sort((a, b) => cy(a) - cy(b));
+    const rows = [];
+    for(const b of sorted){
+      const row = rows.find(r => sameRow(r[0], b));
+      if(row) row.push(b); else rows.push([b]);
+    }
+    rows.forEach(r => r.sort((a, b) => a.x - b.x));
+    return rows.sort((a, b) => cy(a[0]) - cy(b[0]));
+  }
+
+  // ---------- text cleanup ----------
+  const one = s => String(s || '').replace(/\s+/g, ' ').trim();
+  const digits = s => String(s || '').replace(/\D/g, '');
+  function fixDigits(s){
+    return String(s || '').replace(/[Oo]/g, '0').replace(/[Il|]/g, '1').replace(/S/g, '5')
+      .replace(/B/g, '8').replace(/Z/g, '2').replace(/G/g, '6');
+  }
+  function numVal(s, min, max){
+    const raw = String(s || '').replace(/[\s\-–:]/g, '');
+    // Only correct look-alike letters when the box is mostly digits already,
+    // so words like "STONCOR" never turn into numbers.
+    const alnum = raw.replace(/[^A-Za-z0-9|]/g, '');
+    if(!alnum || (alnum.match(/\d/g) || []).length < alnum.length * 0.7) return '';
+    const d = digits(fixDigits(raw));
+    return (d.length >= min && d.length <= max) ? d : '';
+  }
+  function stripZeros(s){ return digits(s).replace(/^0+/, ''); }
+  function phoneVal(s){
+    const d = digits(fixDigits(String(s || '').replace(/[^0-9A-Za-z|]/g, '')));
+    if(d.length === 11 && d[0] === '1') return d.slice(1, 4) + '-' + d.slice(4, 7) + '-' + d.slice(7);
+    if(d.length === 10) return d.slice(0, 3) + '-' + d.slice(3, 6) + '-' + d.slice(6);
+    return '';
+  }
+  // EPA ID: two-letter state + letter/digit + digits (e.g. INR000115295, ILD000123456), or CESQG/VSQG.
+  function epaIdVal(s){
+    let v = String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if(/^(CES[0OQ]G|V[S5][0OQ]G)$/.test(v)) return v.replace(/[0O]/g, 'Q').replace('5', 'S');
+    if(v.length < 9 || v.length > 14) return '';
+    const head = v.slice(0, 3).replace(/0/g, 'O').replace(/1/g, 'I').replace(/5/g, 'S').replace(/8/g, 'B');
+    const tail = fixDigits(v.slice(3));
+    if(!/^[A-Z]{2}[A-Z0-9]$/.test(head) || !/^\d+$/.test(tail)) return '';
+    return head + tail;
+  }
+  // US manifest number. The value is read from the box beside the "US Manifest No" label,
+  // so the label already identifies it; any length and format is accepted (482997, BOL-1234).
+  // Only a standard EPA number (9 digits + 3 letters) gets look-alike character fixes.
+  function manifestVal(s){
+    const v = String(s || '').toUpperCase().replace(/\s+/g, '').replace(/[|]+$/, '').replace(/[^A-Z0-9\-|]/g, '').replace(/\|/g, '');
+    if(v.length === 12){
+      const d = fixDigits(v.slice(0, 9)), l = v.slice(9).replace(/0/g, 'O').replace(/1/g, 'I').replace(/5/g, 'S').replace(/8/g, 'B');
+      if(/^\d{9}$/.test(d) && /^[A-Z]{3}$/.test(l)) return d + l;
+    }
+    const clean = v.replace(/^-+|-+$/g, '');
+    if(clean.length >= 3 && clean.length <= 24 && /\d/.test(clean)) return clean;
+    return '';
+  }
+  function dateVal(s){
+    const m = String(s || '').match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/);
+    return m ? m[1].padStart(2, '0') + '/' + m[2].padStart(2, '0') + '/' + m[3] : '';
+  }
+  function nameVal(s){
+    const v = one(s).replace(/^[\s:;.\-]+/, '');
+    return /[A-Za-z]{2}/.test(v) ? v.toUpperCase() : '';
+  }
+  // "Fort Wayne, IN 46809" and "Fort Wayne IN" + "46809" both become "Fort Wayne IN 46809".
+  function addrVal(parts){
+    return one(parts.join(' ').replace(/\s*,\s*(?=[A-Z]{2}\b)/g, ' ').replace(/\s*,\s*$/, ''));
+  }
+
+  // ---------- label finding ----------
+  // Every label either app layout uses; a box matching any of these is never taken as a value.
+  const ALL_LABELS = /^(SAP\s*Manifest|US\s*Manifest|Manifest\s*No|Manifest\s*Total|Class|Type|Status|EPA\s*(Status|Last|ID|status|last)|Sales\s*(Order|Org)|Transportation|T\.?\s*Plan|Group|Generator|Site\s*Address|ID\s*Number|Emergency|Printed\s*name|Sign\s*date|Phone|ER\s*phone)/i;
+
+  function findLabel(boxes, re, region){
+    const hits = [];
+    for(const b of boxes){
+      if(region && !inRegion(b, region)) continue;
+      const m = b.t.match(re);
+      if(m && m.index <= 2) hits.push({ box: b, rest: one(b.t.slice(m.index + m[0].length)).replace(/^[:.\s]+/, '') });
+    }
+    hits.sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
+    return hits[0] || null;
+  }
+  function inRegion(b, r){
+    return cy(b) >= (r.top ?? -1e9) && cy(b) <= (r.bottom ?? 1e9) && b.x >= (r.left ?? -1e9) && b.x < (r.right ?? 1e9);
+  }
+  // Value boxes to the right of a label on the same row, nearest first.
+  function rightOf(boxes, label, maxGapFactor = 14){
+    const lb = label.box;
+    return boxes
+      .filter(b => b !== lb && b.x >= right(lb) - lb.h * 0.5 && sameRow(lb, b) && (b.x - right(lb)) <= lb.h * maxGapFactor)
+      .sort((a, b) => a.x - b.x);
+  }
+  // Take the label's own trailing text if valid, else the first valid box to its right.
+  function valueFor(boxes, label, clean, opts = {}){
+    if(!label) return '';
+    if(label.rest){ const v = clean(label.rest); if(v) return v; }
+    for(const b of rightOf(boxes, label, opts.maxGap)){
+      if(ALL_LABELS.test(b.t) && !opts.allowLabelText) break;
+      const v = clean(b.t);
+      if(v) return v;
+      if(opts.firstOnly) break;
+    }
+    return '';
+  }
+  // Phone/ERP keep the generator's existing "BLANK" convention: label present, value empty.
+  const labeledOrBlank = (label, v) => v || (label ? 'BLANK' : '');
+
+  // ---------- layout detection ----------
+  const MARKERS = {
+    fiori: [/Generator\s*\(Mail-?To\)\s*:/i, /EPA\s*ID\s*No/i, /ER\s*phone\s*No/i, /T\.?\s*Plan\.?\s*Point/i, /Printed\s*name\s*:/i, /Sales\s*Org\.?\s*:/i, /Show\s*transport\s*details/i],
+    sapgui: [/Site\s*Address/i, /^ID\s*Number/i, /Emergency\s*Response\s*Phone/i, /Generator'?s\s*Phone/i, /Edit\s*Manifest/i, /Generator\s*Printed\s*Name/i, /Transportation\s*Planning\s*Point/i]
+  };
+  function detectLayout(boxes){
+    const score = k => MARKERS[k].filter(re => boxes.some(b => re.test(b.t))).length;
+    const f = score('fiori'), s = score('sapgui');
+    if(Math.max(f, s) < 2) return { layout: 'unknown', fiori: f, sapgui: s };
+    return { layout: f > s ? 'fiori' : 'sapgui', fiori: f, sapgui: s };
+  }
+
+  // ---------- classic SAP GUI ----------
+  function parseSapGui(boxes){
+    const o = {};
+    const L = re => findLabel(boxes, re);
+
+    o.sapManifest = valueFor(boxes, L(/SAP\s*Manifest\s*No\.?/i), s => numVal(s, 6, 12));
+    o.manifest = valueFor(boxes, L(/U\.?\s*S\.?\s*Manifest\s*No\.?/i), manifestVal, { firstOnly: true });
+    o.salesOrder = stripZeros(valueFor(boxes, L(/Sales\s*Order/i), s => numVal(s, 5, 12)));
+
+    const site = L(/Generator\s*\(\s*Site\s*\)/i), mail = L(/Generator\s*\(\s*Mail[\s-]*to\s*\)/i);
+    o.genSite = valueFor(boxes, site, s => numVal(s, 6, 12));
+    o.genMail = valueFor(boxes, mail, s => numVal(s, 6, 12));
+    // Name is the first non-numeric box after the generator number.
+    const nameAfter = lab => {
+      if(!lab) return '';
+      for(const b of rightOf(boxes, lab, 30)){ if(ALL_LABELS.test(b.t)) break; if(!numVal(b.t, 4, 14)){ const v = nameVal(b.t); if(v) return v; } }
+      return '';
+    };
+    o.genName = nameAfter(site) || nameAfter(mail);
+
+    const phoneL = L(/Generator'?s\s*Phone/i);
+    const stopY = phoneL ? phoneL.box.y : null;
+    const column = lab => {
+      if(!lab) return '';
+      const first = rightOf(boxes, lab, 14).find(b => !ALL_LABELS.test(b.t));
+      const start = first || (lab.rest ? lab.box : null);
+      if(!start) return '';
+      const parts = [first ? first.t : lab.rest];
+      const tol = Math.max(12, start.h * 1.2);
+      const limit = stopY ?? (start.y + start.h * 6);
+      boxes.filter(b => b !== start && Math.abs(b.x - start.x) <= tol && b.y > start.y + start.h * 0.5 && b.y < limit - start.h * 0.3 && !ALL_LABELS.test(b.t))
+        .sort((a, b) => a.y - b.y).forEach(b => parts.push(b.t));
+      return addrVal(parts);
+    };
+    o.siteAddr = column(L(/^Site\s*Address/i));
+    o.mailAddr = column(L(/Generator'?s\s*Mail\s*to\s*Address/i)) || o.siteAddr;
+
+    o.phone = labeledOrBlank(phoneL, valueFor(boxes, phoneL, phoneVal, { firstOnly: true }));
+    const erpL = L(/Emergency\s*Response\s*Phone/i);
+    o.erp = labeledOrBlank(erpL, valueFor(boxes, erpL, phoneVal, { firstOnly: true }));
+    o.id = valueFor(boxes, L(/^(EPA\s*)?ID\s*Number/i), epaIdVal, { firstOnly: true });
+    o.printedName = valueFor(boxes, L(/Generator\s*Printed\s*Nam/i), nameVal, { firstOnly: true });
+    o.signDate = valueFor(boxes, L(/Generator\s*Sign\s*Date/i), dateVal, { firstOnly: true });
+    return o;
+  }
+
+  // ---------- Fiori ----------
+  function parseFiori(boxes){
+    const o = {};
+    const L = (re, region) => findLabel(boxes, re, region);
+
+    // Header block
+    o.sapManifest = valueFor(boxes, L(/^Manifest\s*No\s*:?/i), s => numVal(s, 6, 12));
+    o.manifest = valueFor(boxes, L(/U\.?\s*S\.?\s*Manifest\s*No\s*:?/i), manifestVal, { firstOnly: true });
+    o.salesOrder = stripZeros(valueFor(boxes, L(/Sales\s*Order\s*:?/i), s => numVal(s, 5, 12)));
+
+    // Generator block: between the two generator headers and the TRANSPORTER section title.
+    const mailH = L(/Generator\s*\(\s*Mail[\s-]*To\s*\)\s*:?/i);
+    const siteH = L(/Generator\s*\(\s*site\s*\)\s*:?/i);
+    const anyH = mailH || siteH;
+    if(!anyH) return o;
+    const top = Math.min(...[mailH, siteH].filter(Boolean).map(h => h.box.y)) - 5;
+    const transport = boxes.filter(b => /^TRANSPORTER$/i.test(b.t) && b.y > top).sort((a, b) => a.y - b.y)[0];
+    const bot = transport ? transport.y : top + anyH.box.h * 12;
+    const region = { top, bottom: bot };
+    const gen = boxes.filter(b => inRegion(b, region));
+
+    // Columns: Mail-To and Site sit side by side; whichever is left owns x < the other's x.
+    const heads = [mailH && { k: 'mail', h: mailH }, siteH && { k: 'site', h: siteH }].filter(Boolean).sort((a, b) => a.h.box.x - b.h.box.x);
+    const cols = {};
+    heads.forEach((hd, i) => {
+      const left = hd.h.box.x - hd.h.box.h * 2;
+      const rightEdge = heads[i + 1] ? heads[i + 1].h.box.x - hd.h.box.h * 2 : 1e9;
+      cols[hd.k] = { head: hd.h, left, right: rightEdge };
+    });
+
+    // Field labels inside the generator block, found first so they can bound the address search.
+    const lab = re => findLabel(gen, re);
+    const printedL = lab(/^Printed\s*name\s*:?/i), signL = lab(/^Sign\s*date\s*:?/i);
+    const epaL = lab(/^EPA\s*ID\s*No\s*:?/i), erpL = lab(/^ER\s*phone\s*No\s*:?/i), phoneL = lab(/^Phone\s*:?/i);
+    const labelTops = [printedL, signL, epaL, erpL, phoneL].filter(Boolean).map(l => l.box.y);
+    const fieldsTop = labelTops.length ? Math.min(...labelTops) : bot;
+
+    const readCol = c => {
+      if(!c) return {};
+      const r = { name: nameVal(c.head.rest) };
+      if(!r.name){
+        const nb = rightOf(gen, c.head, 6).find(b => !ALL_LABELS.test(b.t));
+        if(nb) r.name = nameVal(nb.t);
+      }
+      const inCol = gen.filter(b => b.x >= c.left && b.x < c.right && b.y > bottom(c.head.box) - 2 && cy(b) < fieldsTop);
+      const idBox = inCol.filter(b => numVal(b.t, 8, 12)).sort((a, b) => a.y - b.y || a.x - b.x)[0];
+      r.num = idBox ? numVal(idBox.t, 8, 12) : '';
+      // Address lines sit to the right of the number box, stacked top to bottom.
+      const minX = idBox ? right(idBox) : c.head.box.x;
+      r.addr = addrVal(inCol.filter(b => b !== idBox && b.x >= minX && !numVal(b.t, 1, 3) && b.t.replace(/[^A-Za-z0-9]/g, '').length >= 3 && /[A-Za-z]{2}/.test(b.t))
+        .sort((a, b) => a.y - b.y).map(b => b.t));
+      return r;
+    };
+    const m = readCol(cols.mail), s = readCol(cols.site);
+    o.genSite = s.num || ''; o.genMail = m.num || '';
+    o.genName = s.name || m.name || '';
+    o.siteAddr = s.addr || m.addr || '';
+    o.mailAddr = m.addr || s.addr || '';
+
+    o.printedName = valueFor(gen, printedL, nameVal, { firstOnly: true });
+    o.signDate = valueFor(gen, signL, dateVal, { firstOnly: true });
+    o.id = valueFor(gen, epaL, epaIdVal, { firstOnly: true });
+    o.phone = labeledOrBlank(phoneL, valueFor(gen, phoneL, phoneVal, { firstOnly: true }));
+    o.erp = labeledOrBlank(erpL, valueFor(gen, erpL, phoneVal, { firstOnly: true }));
+    return o;
+  }
+
+  // ---------- entry point ----------
+  // textFallback: optional function(text) -> object (the generator's old parseSAP). Its values
+  // are only used for fields the box parser left empty AND only if they pass the same cleaners.
+  function parse(boxes, text, textFallback){
+    boxes = (boxes || []).filter(b => b && b.t);
+    const det = detectLayout(boxes);
+    let o = {};
+    if(det.layout === 'fiori') o = parseFiori(boxes);
+    else if(det.layout === 'sapgui') o = parseSapGui(boxes);
+
+    if(typeof textFallback === 'function'){
+      let fb = {};
+      try{ fb = textFallback(text || boxesToText(boxes)) || {}; }catch(e){ fb = {}; }
+      const check = {
+        salesOrder: v => numVal(v, 5, 12), manifest: manifestVal, genSite: v => numVal(v, 6, 12), genMail: v => numVal(v, 6, 12),
+        id: epaIdVal, phone: phoneVal, erp: phoneVal, genName: nameVal, siteAddr: v => /\d/.test(v) && /[A-Za-z]{3}/.test(v) ? one(v) : '',
+        mailAddr: v => /\d/.test(v) && /[A-Za-z]{3}/.test(v) ? one(v) : ''
+      };
+      for(const k of Object.keys(check)){
+        if((!o[k] || o[k] === 'BLANK') && fb[k]){
+          const v = check[k](fb[k]);
+          if(v){ o[k] = v; (o._fromText = o._fromText || []).push(k); }
+        }
+      }
+    }
+    o.layout = det.layout;
+    Object.keys(o).forEach(k => { if(o[k] === '' || o[k] == null) delete o[k]; });
+    return o;
+  }
+
+  const api = { OCR_SETTINGS, prepareCanvas, serviceOptions, recognize, parse, detectLayout, boxesToText,
+    _clean: { manifestVal, epaIdVal, phoneVal, numVal, dateVal, addrVal } };
+  if(typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.ManifestOCR = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script type="module">
+const LOCAL = new URLSearchParams(location.search).has('local');
+const PADDLE_CDN = 'https://esm.sh/ppu-paddle-ocr@6.0.0/web';
+let svc = null, mod = null;
+const $ = id => document.getElementById(id);
+const status = (t, busy) => { $('status').textContent = t; $('status').classList.toggle('busy', !!busy); };
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+async function service(){
+  if(svc) return svc;
+  status('Loading PaddleOCR model…', true);
+  if(LOCAL){
+    mod = await import('./paddle.bundle.js');
+    mod.ort.env.wasm.wasmPaths = '/ort/'; mod.ort.env.wasm.numThreads = 1;
+    svc = new mod.PaddleOcrService(ManifestOCR.serviceOptions({detection:'/models/det.ort',recognition:'/models/rec.ort',charactersDictionary:'/models/dict.txt'}));
+  }else{
+    mod = await import(PADDLE_CDN);
+    const model = mod.V5_EN_MOBILE_MODEL || mod.V6_SMALL_MODEL || undefined;
+    svc = new mod.PaddleOcrService(ManifestOCR.serviceOptions(model));
+  }
+  await svc.initialize();
+  return svc;
+}
+
+const FIELDS = [
+  ['salesOrder','Sales Order #'],['manifest','US Manifest #'],['genName','Generator Name'],
+  ['genSite','Generator Site #'],['genMail','Generator Mailing #'],['id','EPA ID'],
+  ['phone','Generator Phone'],['erp','ERP'],['siteAddr','Site Address'],['mailAddr','Mail-to Address']
+];
+const EXTRAS = [['sapManifest','SAP Manifest #'],['printedName','Printed Name'],['signDate','Sign Date']];
+const LABEL_RE = /^(SAP\s*Manifest|US\s*Manifest|Manifest\s*No|Sales\s*Order|Generator|Site\s*Address|ID\s*Number|Emergency|Printed\s*name|Sign\s*date|Phone|ER\s*phone|EPA\s*ID)/i;
+
+let queue = Promise.resolve();
+function addFiles(files){
+  [...files].filter(f => f.type.startsWith('image/')).forEach(f => { queue = queue.then(() => runOne(f)); });
+}
+
+async function runOne(file){
+  const card = document.createElement('section'); card.className = 'result';
+  card.innerHTML = `<div class="rhead"><span class="name">${esc(file.name || 'pasted image')}</span><span class="pill">reading…</span><span class="grow"></span></div>`;
+  $('results').prepend(card);
+  try{
+    const url = URL.createObjectURL(file); const img = new Image(); img.src = url; await img.decode();
+    const s = await service();
+    status('Reading screenshot…', true);
+    const t0 = performance.now();
+    const canvas = ManifestOCR.prepareCanvas(img);
+    const { text, boxes } = await ManifestOCR.recognize(s, canvas);
+    const data = ManifestOCR.parse(boxes, text);
+    const ms = Math.round(performance.now() - t0);
+    render(card, file, img, canvas, boxes, text, data, ms);
+    URL.revokeObjectURL(url);
+    const found = FIELDS.filter(([k]) => data[k] && data[k] !== 'BLANK').length;
+    status(`Last: ${found}/${FIELDS.length} fields · ${data.layout} · ${(ms/1000).toFixed(1)}s`);
+  }catch(e){
+    console.error(e);
+    card.querySelector('.pill').textContent = 'failed';
+    card.insertAdjacentHTML('beforeend', `<div class="err">OCR failed: ${esc(e && e.message || e)}</div>`);
+    status('OCR failed');
+  }
+}
+
+function render(card, file, img, canvas, boxes, text, data, ms){
+  const found = FIELDS.filter(([k]) => data[k] && data[k] !== 'BLANK').length;
+  const head = card.querySelector('.rhead');
+  head.querySelector('.pill').className = 'pill ' + data.layout;
+  head.querySelector('.pill').textContent = data.layout === 'sapgui' ? 'SAP GUI layout' : data.layout === 'fiori' ? 'Fiori layout' : 'layout not recognized';
+  head.insertAdjacentHTML('beforeend', `<span class="pill">${found}/${FIELDS.length} fields</span><span class="pill">${(ms/1000).toFixed(1)} s</span><button data-a="copy">Copy JSON</button>`);
+
+  // Overlay: draw screenshot + boxes at display scale.
+  const sc = img.width / canvas.width;
+  const ov = document.createElement('canvas'); ov.width = img.width; ov.height = img.height;
+  const g = ov.getContext('2d'); g.drawImage(img, 0, 0);
+  const used = new Set(Object.values(data).filter(v => typeof v === 'string').map(v => v.toUpperCase().replace(/\D/g, '').length > 6 ? v.replace(/\D/g, '') : v.toUpperCase()));
+  boxes.forEach(b => {
+    const isLabel = LABEL_RE.test(b.t);
+    const bt = b.t.toUpperCase();
+    const isUsed = !isLabel && [...used].some(u => u && (bt.includes(u) || bt.replace(/\D/g, '') === u || u.includes(bt)));
+    g.lineWidth = 2;
+    g.strokeStyle = isLabel ? 'rgba(63,191,127,.95)' : isUsed ? 'rgba(38,140,230,.95)' : 'rgba(150,150,150,.35)';
+    g.strokeRect(b.x * sc, b.y * sc, b.w * sc, b.h * sc);
+  });
+
+  const row = ([k, l], extra) => {
+    const v = data[k];
+    const cls = !v ? 'v empty' : v === 'BLANK' ? 'v blank' : 'v';
+    return `<tr class="${extra ? 'extra' : ''}"><td>${esc(l)}</td><td class="${cls}">${v ? esc(v) : 'not found'}</td></tr>`;
+  };
+  const body = document.createElement('div'); body.className = 'rbody';
+  body.innerHTML = `<div class="shot"></div><div><table>${FIELDS.map(f => row(f)).join('')}${EXTRAS.map(f => row(f, true)).join('')}</table>
+    <details><summary>Raw OCR text (${boxes.length} boxes)</summary><pre>${esc(text)}</pre></details></div>`;
+  body.querySelector('.shot').appendChild(ov);
+  card.appendChild(body);
+  head.querySelector('[data-a=copy]').onclick = async () => {
+    const out = { file: file.name || 'pasted', layout: data.layout, ms, fields: Object.fromEntries([...FIELDS, ...EXTRAS].map(([k]) => [k, data[k] || ''])), boxes };
+    try{ await navigator.clipboard.writeText(JSON.stringify(out, null, 1)); head.querySelector('[data-a=copy]').textContent = 'Copied ✓'; }
+    catch(e){ alert('Clipboard blocked by browser.'); }
+  };
+}
+
+const drop = $('drop'), file = $('file');
+drop.onclick = () => file.click();
+drop.onkeydown = e => { if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); file.click(); } };
+file.onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+document.addEventListener('paste', e => {
+  const imgs = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith('image/')).map(i => i.getAsFile());
+  if(imgs.length){ e.preventDefault(); addFiles(imgs); }
+});
+window.__labAdd = addFiles;
+</script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notifications Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0a0c14; color:#c8cad0; font-family:'Barlow Condensed',sans-serif; padding:30px 40px; }
+
+  /* Header bar */
+  .header { display:flex; align-items:center; gap:20px; margin-bottom:30px; flex-wrap:wrap; }
+  h1 { font-size:72px; letter-spacing:4px; color:#f5a623; margin-bottom:0; }
+  .subtitle { font-family:'Share Tech Mono',monospace; font-size:26px; color:#555; letter-spacing:2px; }
+  .admin-bar { margin-left:auto; display:flex; align-items:center; gap:8px; }
+  #adminStatus { font-size:16px; color:#555; font-family:'Share Tech Mono',monospace; letter-spacing:1px; }
+  #adminPwInput { font-family:'Share Tech Mono',monospace; font-size:16px; padding:6px 12px; background:#0f1117; border:1px solid #2a2a3a; border-radius:4px; color:#aaa; width:180px; outline:none; }
+  .admin-btn { font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; letter-spacing:1px; padding:6px 16px; background:transparent; border:1px solid #2a2a3a; border-radius:4px; color:#888; cursor:pointer; }
+  #adminLogoutBtn { display:none; border-color:rgba(245,166,35,0.25); color:#f5a623; }
+
+  /* Firebase status */
+  #fbStatus { font-family:'Share Tech Mono',monospace; font-size:14px; color:#555; text-align:right; margin-bottom:10px; }
+
+  /* Table */
+  table { width:100%; border-collapse:collapse; margin-bottom:40px; table-layout:fixed; }
+  th { background:#12141e; color:#f5a623; font-size:22px; font-weight:700; letter-spacing:2px; text-align:left; padding:12px 14px; border-bottom:2px solid #f5a623; font-family:'Share Tech Mono',monospace; }
+  td { padding:12px 14px; border-bottom:1px solid #1a1d2a; font-size:24px; vertical-align:top; line-height:1.4; }
+  tr:hover { background:rgba(245,166,35,0.03); }
+  col.col-issue { width:22%; }
+  col.col-zcode { width:10%; }
+  col.col-send { width:18%; }
+  col.col-attach { width:50%; }
+  .issue-col { font-weight:700; color:#e8e8e8; }
+  .issue-note { font-weight:400; color:#888; font-size:21px; display:block; margin-top:2px; }
+  .z-col { font-family:'Share Tech Mono',monospace; color:#f5a623; font-weight:700; letter-spacing:1px; white-space:nowrap; }
+  .send-col { color:#8abfea; font-weight:600; }
+  .attach-col { color:#999; font-size:22px; }
+  .highlight { color:#ff4d4d; font-weight:700; }
+
+  /* Notes section */
+  h2 { font-size:38px; letter-spacing:3px; color:#f5a623; margin-bottom:14px; border-bottom:2px solid #1a1d2a; padding-bottom:8px; }
+  .note-block { background:#12141e; border-left:3px solid #f5a623; padding:16px 20px; margin-bottom:40px; font-size:24px; line-height:1.7; color:#aaa; }
+  .note-block strong { color:#e8e8e8; }
+
+  /* Admin edit/delete buttons on rows */
+  .row-actions { display:none; white-space:nowrap; }
+  body.is-admin .row-actions { display:inline-flex; gap:6px; margin-left:10px; }
+  .edit-row-btn, .del-row-btn { font-family:'Share Tech Mono',monospace; font-size:20px; padding:4px 10px; border:1px solid #2a2a3a; border-radius:4px; cursor:pointer; background:transparent; }
+  .edit-row-btn { color:#f5a623; border-color:rgba(245,166,35,0.3); }
+  .edit-row-btn:hover { background:rgba(245,166,35,0.1); }
+  .del-row-btn { color:#ff4d4d; border-color:rgba(255,77,77,0.3); }
+  .del-row-btn:hover { background:rgba(255,77,77,0.1); }
+
+  /* Add row button */
+  .add-row-btn { display:none; font-family:'Barlow Condensed',sans-serif; font-size:24px; font-weight:700; letter-spacing:2px; padding:12px 24px; background:transparent; border:2px dashed #2a2a3a; border-radius:6px; color:#555; cursor:pointer; width:100%; margin-bottom:30px; transition:all 0.15s; }
+  body.is-admin .add-row-btn { display:block; }
+  .add-row-btn:hover { border-color:#f5a623; color:#f5a623; }
+
+  /* Edit notes button */
+  .edit-notes-btn { display:none; font-family:'Share Tech Mono',monospace; font-size:20px; padding:6px 14px; border:1px solid rgba(245,166,35,0.3); border-radius:4px; cursor:pointer; background:transparent; color:#f5a623; margin-left:16px; vertical-align:middle; }
+  body.is-admin .edit-notes-btn { display:inline-block; }
+  .edit-notes-btn:hover { background:rgba(245,166,35,0.1); }
+
+  /* Modal */
+  .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.open { display:flex; }
+  .modal { background:#12141e; border:1px solid #2a2a3a; border-radius:10px; padding:30px; width:90%; max-width:700px; }
+  .modal h3 { font-family:'Barlow Condensed',sans-serif; font-size:32px; font-weight:700; letter-spacing:3px; color:#f5a623; margin-bottom:20px; border-bottom:2px solid #f5a623; padding-bottom:10px; }
+  .modal label { font-family:'Share Tech Mono',monospace; font-size:16px; color:#888; letter-spacing:1px; display:block; margin-bottom:6px; margin-top:14px; }
+  .modal input, .modal textarea { width:100%; background:#0a0c14; border:1px solid #2a2a3a; border-radius:4px; padding:12px 16px; color:#e8e8e8; font-family:'Barlow Condensed',sans-serif; font-size:22px; outline:none; }
+  .modal textarea { resize:vertical; min-height:80px; }
+  .modal-btns { display:flex; gap:10px; margin-top:24px; justify-content:flex-end; }
+  .btn-cancel, .btn-save, .btn-delete { font-family:'Barlow Condensed',sans-serif; font-size:20px; font-weight:700; letter-spacing:2px; padding:10px 24px; border-radius:6px; cursor:pointer; border:none; }
+  .btn-cancel { background:transparent; border:1px solid #2a2a3a; color:#888; }
+  .btn-save { background:#f5a623; color:#000; }
+  .btn-delete { background:transparent; border:1px solid rgba(255,77,77,0.3); color:#ff4d4d; margin-right:auto; }
+  .btn-delete:hover { background:rgba(255,77,77,0.1); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>RAISING NOTIFICATIONS</h1>
+    <div class="subtitle">RECEIVING DEPARTMENT QUICK REFERENCE</div>
+  </div>
+  <div class="admin-bar">
+    <span id="adminStatus">🔒 READ ONLY</span>
+    <input type="password" id="adminPwInput" placeholder="Admin password" maxlength="32">
+    <button class="admin-btn" id="adminPwBtn">UNLOCK</button>
+    <button class="admin-btn" id="adminLogoutBtn">LOCK</button>
+  </div>
+</div>
+
+<div id="fbStatus">⬤ Connecting...</div>
+
+<table>
+  <colgroup>
+    <col class="col-issue">
+    <col class="col-zcode">
+    <col class="col-send">
+    <col class="col-attach">
+  </colgroup>
+  <thead>
+    <tr>
+      <th>ISSUE</th>
+      <th>Z-CODE</th>
+      <th>SEND TO</th>
+      <th>ATTACHMENTS / NOTES</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
+
+<button class="add-row-btn" id="addRowBtn">+ ADD ROW</button>
+
+<h2>STATE CODES <button class="edit-notes-btn" id="editNotesBtn">EDIT</button></h2>
+<div class="note-block" id="notesBlock"></div>
+
+<!-- EDIT ROW MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">EDIT ROW</h3>
+    <div>
+      <label>ISSUE</label>
+      <input type="text" id="modalIssue" placeholder="e.g. WEIGHT DISCREPANCY">
+    </div>
+    <div>
+      <label>NOTES (under issue name)</label>
+      <textarea id="modalNotes" rows="2" placeholder="e.g. -Do not Q&#10;-Do not bill"></textarea>
+    </div>
+    <div>
+      <label>Z-CODE</label>
+      <input type="text" id="modalZcode" placeholder="e.g. Z22">
+    </div>
+    <div>
+      <label>SEND TO</label>
+      <input type="text" id="modalSendTo" placeholder="e.g. CER">
+    </div>
+    <div>
+      <label>ATTACHMENTS / NOTES</label>
+      <textarea id="modalAttach" rows="3" placeholder="e.g. Validation report, manifest..."></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-delete" id="modalDelete" style="display:none">DELETE</button>
+      <button class="btn-cancel" id="modalCancel">CANCEL</button>
+      <button class="btn-save" id="modalSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT NOTES MODAL -->
+<div class="modal-overlay" id="notesModalOverlay">
+  <div class="modal">
+    <h3>EDIT STATE CODES NOTE</h3>
+    <div>
+      <label>CONTENT (use \n for line breaks, **text** for bold, ***text*** for red highlight)</label>
+      <textarea id="notesModalText" rows="8"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" id="notesModalCancel">CANCEL</button>
+      <button class="btn-save" id="notesModalSave">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin.js"></script>
+<script src="js/firebase-init.js"></script>
+<script>
+// ── Default Data ──
+var NOTIF_ROWS = [
+  { issue:"WEIGHT DISCREPANCY", notes:"-Do not Q\n-Do not bill – Send to Q bin", zcode:"Z22", sendTo:"CER", attach:"Validation report, manifest, LDR, relevant weight sheets, offspec" },
+  { issue:"CYLINDERS", notes:"-Never offspec\n-Send to Energetics\n-Physical Analysis", zcode:"Z21", sendTo:"ENERGETICS - #12", attach:"Validation sheet, manifest, LDR, packing slips\n\nQ the lines in sales order. Make 1 notification per sales order – include all lines in notification description" },
+  { issue:"WASTE CODES / HAZ CODES / RCRA CODES", notes:"", zcode:"Z28", sendTo:"CER", attach:"Validation report, manifest, original relevant weight sheets, LDR, etc.\n\nOn offspec, always ask whether to remove or add" },
+  { issue:"GENERATOR DATA ISSUES", notes:"-EPA ID, address, ERP", zcode:"Z23", sendTo:"CER", attach:"Manifest, LDR, explanation of what doesn't match, offspec" },
+  { issue:"STATE CODES", notes:"-Do not Q\n-Take off codes and deliver\n-Put codes back in", zcode:"Z28", sendTo:"APPROVALS - #10", attach:"Manifest, LDR, explanation of what doesn't match, offspec – Request to add code to profile or if it needs removed from manifest" },
+  { issue:"PROFILE ISSUES", notes:"-Not approved (Z25)\n-Expired\n-Pending/canceled\n-D.O.T. Descriptions (Z19)", zcode:"Z19", sendTo:"APPROVALS - #10", attach:"Validation report, manifest, LDR, relevant weight sheets, offspec – possible screenshot of error" },
+  { issue:"PHYSICAL", notes:"-Bulk liquid profile, but inner containers", zcode:"Z002", sendTo:"CER", attach:"Validation report, manifest, relevant weight sheets, LDR, etc. *** NEEDS OFFSPEC" },
+  { issue:"PHYSICAL II", notes:"-Inner container profile, but bulk liquids", zcode:"Z002", sendTo:"Q MANAGER", attach:"Validation report, manifest, original relevant weight sheets, LDR, etc. *** NO OFFSPEC NEEDED" },
+  { issue:"COMPATIBILITY", notes:"", zcode:"Z001", sendTo:"CER", attach:"Validation report, manifest, analyticals, relevant weight sheets, LDR, etc. *** NEEDS OFFSPEC" },
+  { issue:"CHEMICAL", notes:"-Reprofile requests for compatibility, oxidizes, acid/pH, low BTU\n*** Have lab double-check error", zcode:"Z001", sendTo:"CER", attach:"Validation report, manifest, analyticals, relevant weight sheets, LDR, etc. *** NEEDS OFFSPEC" },
+  { issue:"PAPERWORK ISSUES", notes:"", zcode:"Z004", sendTo:"", attach:"CSR / LABPACK" },
+  { issue:"PCB's", notes:"-Notify Q Manager immediately for a retest", zcode:"Z30", sendTo:"Q MANAGER", attach:"Paperwork will be done by Q Manager" },
+  { issue:"METALS", notes:"", zcode:"Z29", sendTo:"LAB NOTIFIED - #24", attach:"Add code in subject line. Bill manifest if no other Q's / no physical packet required\n\nValidation report, manifest, analyticals, original relevant weight sheets, LDR, etc." },
+  { issue:"METALS - LX1/NX1", notes:"(D007 & D009 'Q' in VA02)", zcode:"Z29", sendTo:"SEND TO Q MANAGER (#18)", attach:"Validation report, manifest, analyticals, LDR, etc. – OK to bill manifest / no physical packet required" },
+  { issue:"E-MANIFEST", notes:"", zcode:"Z27", sendTo:"CER", attach:"Describe issue" },
+  { issue:"ADDING CYLINDERS", notes:"", zcode:"Z27", sendTo:"CER / LABPAK", attach:"\"ADD CYLINDERS\" in subject" },
+  { issue:"REJECTION", notes:"", zcode:"Z011", sendTo:"", attach:"" },
+  { issue:"PRICING", notes:"", zcode:"Z20", sendTo:"", attach:"" },
+  { issue:"MISSING PAPERWORK", notes:"", zcode:"Z24", sendTo:"", attach:"" },
+  { issue:"", notes:"", zcode:"Z23", sendTo:"CSR", attach:"" }
+];
+
+var NOTIF_NOTES = "**DO NOT 'Q'**\n- Take out state codes and deliver\n- Put state codes back in SAP manifest (***PA and CA you do NOT have to put codes back in***)\n- Send notification to APPROVALS (Z28) and request to add to profile or remove from manifest\n***A signed offspec is needed to remove from manifest***";
+
+// ── Firebase Config ──
+var FB_DOC = 'notifications_data';
+var IS_ADMIN = false;
+var ADMIN_PW = ADMIN_PASSWORD;
+
+function setFbStatus(msg, color) {
+  var el = document.getElementById('fbStatus');
+  if (el) { el.innerHTML = msg; el.style.color = color || '#555'; }
+}
+
+// ── Rendering ──
+function escHtml(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function formatText(text) {
+  if (!text) return '';
+  return escHtml(text)
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<span class="highlight">$1</span>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+function renderTable() {
+  var tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  NOTIF_ROWS.forEach(function(row, i) {
+    var tr = document.createElement('tr');
+    var noteHtml = row.notes ? '<span class="issue-note">' + formatText(row.notes) + '</span>' : '';
+    var attachHtml = formatText(row.attach).replace(/\*\*\* /g, '<span class="highlight">*** </span>');
+    // Highlight ***TEXT patterns in attach
+    attachHtml = attachHtml.replace(/\*\*\*([^<]+)/g, '<span class="highlight">$1</span>');
+
+    tr.innerHTML =
+      '<td class="issue-col">' + escHtml(row.issue) + noteHtml +
+        '<span class="row-actions">' +
+          '<button class="edit-row-btn" data-idx="' + i + '">EDIT</button>' +
+          '<button class="del-row-btn" data-idx="' + i + '">DEL</button>' +
+        '</span>' +
+      '</td>' +
+      '<td class="z-col">' + escHtml(row.zcode) + '</td>' +
+      '<td class="send-col">' + escHtml(row.sendTo) + '</td>' +
+      '<td class="attach-col">' + formatText(row.attach) + '</td>';
+    tbody.appendChild(tr);
+  });
+
+  // Wire up edit/delete buttons
+  tbody.querySelectorAll('.edit-row-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { openEditModal(parseInt(this.dataset.idx)); });
+  });
+  tbody.querySelectorAll('.del-row-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var idx = parseInt(this.dataset.idx);
+      if (confirm('Delete row "' + NOTIF_ROWS[idx].issue + '"?')) {
+        NOTIF_ROWS.splice(idx, 1);
+        renderTable();
+        saveToFirebase();
+      }
+    });
+  });
+}
+
+function renderNotes() {
+  document.getElementById('notesBlock').innerHTML = formatText(NOTIF_NOTES);
+}
+
+// ── Modal logic ──
+var editingIdx = -1;
+
+function openEditModal(idx) {
+  editingIdx = idx;
+  var row = (idx >= 0) ? NOTIF_ROWS[idx] : { issue:'', notes:'', zcode:'', sendTo:'', attach:'' };
+  document.getElementById('modalTitle').textContent = (idx >= 0) ? 'EDIT ROW' : 'ADD ROW';
+  document.getElementById('modalIssue').value = row.issue;
+  document.getElementById('modalNotes').value = row.notes;
+  document.getElementById('modalZcode').value = row.zcode;
+  document.getElementById('modalSendTo').value = row.sendTo;
+  document.getElementById('modalAttach').value = row.attach;
+  document.getElementById('modalDelete').style.display = (idx >= 0) ? '' : 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+document.getElementById('modalSave').addEventListener('click', function() {
+  var obj = {
+    issue: document.getElementById('modalIssue').value,
+    notes: document.getElementById('modalNotes').value,
+    zcode: document.getElementById('modalZcode').value,
+    sendTo: document.getElementById('modalSendTo').value,
+    attach: document.getElementById('modalAttach').value
+  };
+  if (editingIdx >= 0) {
+    NOTIF_ROWS[editingIdx] = obj;
+  } else {
+    NOTIF_ROWS.push(obj);
+  }
+  document.getElementById('modalOverlay').classList.remove('open');
+  renderTable();
+  saveToFirebase();
+});
+
+document.getElementById('modalDelete').addEventListener('click', function() {
+  if (editingIdx >= 0 && confirm('Delete this row?')) {
+    NOTIF_ROWS.splice(editingIdx, 1);
+    document.getElementById('modalOverlay').classList.remove('open');
+    renderTable();
+    saveToFirebase();
+  }
+});
+
+document.getElementById('modalCancel').addEventListener('click', function() {
+  document.getElementById('modalOverlay').classList.remove('open');
+});
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+document.getElementById('addRowBtn').addEventListener('click', function() { openEditModal(-1); });
+
+// ── Notes editing ──
+document.getElementById('editNotesBtn').addEventListener('click', function() {
+  document.getElementById('notesModalText').value = NOTIF_NOTES;
+  document.getElementById('notesModalOverlay').classList.add('open');
+});
+document.getElementById('notesModalSave').addEventListener('click', function() {
+  NOTIF_NOTES = document.getElementById('notesModalText').value;
+  document.getElementById('notesModalOverlay').classList.remove('open');
+  renderNotes();
+  saveToFirebase();
+});
+document.getElementById('notesModalCancel').addEventListener('click', function() {
+  document.getElementById('notesModalOverlay').classList.remove('open');
+});
+document.getElementById('notesModalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+
+// ── Admin ──
+function applyAdminMode() {
+  IS_ADMIN = true;
+  document.body.classList.add('is-admin');
+  document.getElementById('adminStatus').textContent = '🔓 ADMIN';
+  document.getElementById('adminStatus').style.color = '#f5a623';
+  document.getElementById('adminPwInput').style.display = 'none';
+  document.getElementById('adminPwBtn').style.display = 'none';
+  document.getElementById('adminLogoutBtn').style.display = '';
+}
+
+document.getElementById('adminPwBtn').addEventListener('click', function() {
+  var pw = document.getElementById('adminPwInput').value;
+  if (pw === ADMIN_PW) {
+    applyAdminMode();
+  } else {
+    document.getElementById('adminPwInput').style.borderColor = '#ff4d4d';
+    setTimeout(function() { document.getElementById('adminPwInput').style.borderColor = ''; }, 1000);
+  }
+});
+document.getElementById('adminPwInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.getElementById('adminPwBtn').click();
+});
+document.getElementById('adminLogoutBtn').addEventListener('click', function() {
+  IS_ADMIN = false;
+  document.body.classList.remove('is-admin');
+  document.getElementById('adminStatus').textContent = '🔒 READ ONLY';
+  document.getElementById('adminStatus').style.color = '#555';
+  document.getElementById('adminPwInput').style.display = '';
+  document.getElementById('adminPwInput').value = '';
+  document.getElementById('adminPwBtn').style.display = '';
+  document.getElementById('adminLogoutBtn').style.display = 'none';
+});
+
+// ── Firebase persistence ──
+function saveToFirebase() {
+  if (!FIREBASE_DB) return;
+  FIREBASE_DB.collection('notifications').doc(FB_DOC).set({ rows: NOTIF_ROWS, notes: NOTIF_NOTES }).then(function() {
+    setFbStatus('⬤ Saved', '#3ddc84');
+    setTimeout(function() { setFbStatus('⬤ Connected', '#3ddc84'); }, 2000);
+  }).catch(function(e) {
+    setFbStatus('⬤ Save failed', '#ff4d4d');
+    console.warn('Firebase save error:', e);
+  });
+}
+
+onFirebaseReady(function() {
+  setFbStatus('⬤ Loading...', '#f5a623');
+  FIREBASE_DB.collection('notifications').doc(FB_DOC).get().then(function(doc) {
+    if (doc.exists) {
+      var d = doc.data();
+      if (d.rows && Array.isArray(d.rows)) NOTIF_ROWS = d.rows;
+      if (d.notes !== undefined) NOTIF_NOTES = d.notes;
+      setFbStatus('⬤ Connected', '#3ddc84');
+    } else {
+      // Seed with defaults
+      FIREBASE_DB.collection('notifications').doc(FB_DOC).set({ rows: NOTIF_ROWS, notes: NOTIF_NOTES }).then(function() {
+        setFbStatus('⬤ Connected (seeded)', '#3ddc84');
+      });
+    }
+    renderTable();
+    renderNotes();
+  }).catch(function(e) {
+    setFbStatus('⬤ Load failed — using defaults', '#ff4d4d');
+    console.warn('Firebase load error:', e);
+    renderTable();
+    renderNotes();
+  });
+});
+
+// Initial render (before Firebase loads)
+renderTable();
+renderNotes();
+</script>
+</body>
+</html>

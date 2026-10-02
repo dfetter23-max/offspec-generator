@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Receiving Tools — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:        #0a0c12;
+  --bg-glow:   #10131d;
+  --surface:   #12151f;
+  --surface-2: #171b28;
+  --line:      #232838;
+  --line-soft: #1b2030;
+  --ink:       #e8eaf0;
+  --muted:     #7d859a;
+  --dim:       #565e73;
+  --amber:     #f5a623;
+  --blue:      #5b8aff;
+  --green:     #3ddc84;
+  --violet:    #a97bff;
+  --pink:      #ff6b9d;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+a { color: inherit; text-decoration: none; }
+
+/* ── Top bar ───────────────────────────────────────────── */
+.topbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 22px; height: 58px;
+  background: rgba(10,12,18,0.92);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 50;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  margin-right: 20px; cursor: pointer;
+  background: none; border: 0; color: inherit; font: inherit;
+}
+.brand .mark {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--amber), #d2751a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.brand .name {
+  font-weight: 700; font-size: 15px; letter-spacing: -0.01em; white-space: nowrap;
+}
+.brand .name small {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  color: var(--dim); margin-left: 6px; letter-spacing: 0.06em;
+}
+
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.02em; color: var(--muted);
+  padding: 7px 13px; border-radius: 7px;
+  background: none; border: 0; cursor: pointer; white-space: nowrap;
+  transition: color .12s, background .12s;
+}
+.tab:hover { color: var(--ink); background: var(--surface-2); }
+.tab.active { color: var(--bg); background: var(--amber); font-weight: 600; }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.legacy-link {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  padding: 6px 11px; border: 1px solid var(--line);
+  border-radius: 6px; transition: all .12s; white-space: nowrap;
+}
+.legacy-link:hover { color: var(--ink); border-color: var(--muted); }
+
+/* ── Views ─────────────────────────────────────────────── */
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.view.active { display: flex; }
+
+/* Home */
+#view-home {
+  overflow-y: auto;
+  background:
+    radial-gradient(900px 480px at 12% -8%, rgba(245,166,35,0.07), transparent 60%),
+    radial-gradient(760px 420px at 92% 4%, rgba(91,138,255,0.06), transparent 62%);
+}
+.home-inner {
+  max-width: 1560px; margin: 0; padding: 52px 40px 80px; width: 100%;
+  display: grid; grid-template-columns: 240px 1fr; gap: 40px; align-items: start;
+}
+.home-main { min-width: 0; }
+@media (max-width: 980px) {
+  .home-inner { grid-template-columns: 1fr; gap: 28px; padding-top: 34px; }
+}
+
+/* ── Announcements rail ────────────────────────────────── */
+.home-rail { position: sticky; top: 78px; }
+@media (max-width: 980px) { .home-rail { position: static; } }
+.ann-panel {
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; padding: 18px 18px 14px; overflow: hidden;
+}
+.ann-head { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.ann-title {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink);
+}
+.ann-lock {
+  margin-left: auto; background: none; border: 1px solid var(--line);
+  color: var(--muted); font-size: 13px; line-height: 1;
+  width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+  transition: all .12s; display: flex; align-items: center; justify-content: center;
+}
+.ann-lock:hover { color: var(--amber); border-color: var(--amber); }
+.ann-lock.unlocked { color: var(--green); border-color: rgba(61,220,132,0.5); }
+.ann-display {
+  font-size: 13.5px; line-height: 1.62; color: var(--ink);
+  white-space: pre-wrap; word-wrap: break-word; min-height: 40px;
+}
+.ann-display.empty { color: var(--dim); font-style: italic; }
+.ann-edit { display: block; }
+.ann-edit[hidden] { display: none; }
+.ann-edit textarea {
+  width: 100%; resize: vertical; box-sizing: border-box;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px;
+  font-family: inherit; font-size: 13.5px; line-height: 1.6;
+  outline: none; transition: border-color .12s;
+}
+.ann-edit textarea:focus { border-color: var(--amber); }
+.ann-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.ann-btn {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.04em; padding: 8px 14px; border-radius: 8px;
+  cursor: pointer; border: 1px solid var(--line); transition: all .12s;
+}
+.ann-btn.ghost { background: none; color: var(--muted); }
+.ann-btn.ghost:hover { color: var(--ink); border-color: var(--muted); }
+.ann-btn.save { background: var(--amber); color: #120c02; border-color: var(--amber); }
+.ann-btn.save:hover { filter: brightness(1.08); }
+.ann-foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  margin-top: 14px; padding-top: 11px; border-top: 1px solid var(--line-soft);
+  font-family: var(--mono); font-size: 10px; color: var(--dim);
+}
+#annMeta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.hero { margin-bottom: 44px; }
+.hero .eyebrow {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--amber); margin-bottom: 12px;
+}
+.hero h1 {
+  font-size: 42px; font-weight: 700; letter-spacing: -0.025em;
+  line-height: 1.12; margin-bottom: 14px;
+}
+.hero p { font-size: 16px; color: var(--muted); max-width: 62ch; line-height: 1.6; }
+
+.sec-head {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 18px;
+}
+.sec-head h2 {
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim);
+}
+.sec-head .rule { flex: 1; height: 1px; background: var(--line-soft); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  gap: 16px;
+  margin-bottom: 46px;
+}
+
+/* Reference + Bookmarklets sit side by side */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 32px;
+  align-items: start;
+}
+.cols .col { min-width: 0; }
+.cols .grid { margin-bottom: 0; }
+@media (max-width: 900px) {
+  .cols { grid-template-columns: 1fr; gap: 0; }
+  .cols .grid { margin-bottom: 40px; }
+}
+
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px;
+  cursor: pointer;
+  display: flex; flex-direction: column;
+  text-align: left; font: inherit; color: inherit;
+  transition: transform .14s ease, border-color .14s ease, background .14s ease;
+  overflow: hidden;
+}
+.card::before {
+  content: ''; position: absolute; inset: 0 auto 0 0;
+  width: 3px; background: var(--accent, var(--amber));
+  opacity: 0; transition: opacity .14s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent, var(--amber));
+  background: var(--surface-2);
+}
+.card:hover::before { opacity: 1; }
+
+.card .icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px; margin-bottom: 16px;
+  background: color-mix(in srgb, var(--accent, var(--amber)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent, var(--amber)) 26%, transparent);
+}
+.card h3 {
+  font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 7px;
+}
+.card p {
+  font-size: 13px; color: var(--muted); line-height: 1.5; flex: 1;
+}
+.card .foot {
+  display: flex; align-items: center; gap: 7px;
+  margin-top: 16px; font-family: var(--mono);
+  font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--accent, var(--amber));
+}
+.card .foot .arrow { transition: transform .14s; }
+.card:hover .foot .arrow { transform: translateX(3px); }
+
+.pill {
+  position: absolute; top: 16px; right: 16px;
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 7px; border-radius: 4px;
+  background: color-mix(in srgb, var(--accent, var(--amber)) 15%, transparent);
+  color: var(--accent, var(--amber));
+  border: 1px solid color-mix(in srgb, var(--accent, var(--amber)) 30%, transparent);
+}
+
+/* Accents */
+.a-amber  { --accent: var(--amber); }
+.a-blue   { --accent: var(--blue); }
+.a-green  { --accent: var(--green); }
+.a-violet { --accent: var(--violet); }
+.a-pink   { --accent: var(--pink); }
+
+/* ── Hero card: the Offspec Generator ──────────────────── */
+.hero-card {
+  position: relative; overflow: hidden;
+  display: grid; grid-template-columns: 1.35fr 1fr; gap: 32px;
+  background: linear-gradient(120deg, #171a26 0%, #12151f 55%);
+  border: 1px solid rgba(245,166,35,0.30);
+  border-radius: 16px; padding: 30px 32px; margin-bottom: 46px;
+  transition: border-color .16s ease, transform .16s ease;
+}
+.hero-card:hover { border-color: rgba(245,166,35,0.55); }
+.hc-glow {
+  position: absolute; top: -140px; right: -110px;
+  width: 380px; height: 380px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(245,166,35,0.16), transparent 68%);
+  pointer-events: none;
+}
+.hc-main { position: relative; z-index: 1; min-width: 0; }
+.hc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.hc-icon {
+  width: 46px; height: 46px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 23px;
+  background: rgba(245,166,35,0.14);
+  border: 1px solid rgba(245,166,35,0.32);
+}
+.hc-ver {
+  font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  padding: 4px 9px; border-radius: 5px; background: var(--amber); color: #120c02;
+}
+.hc-flag {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--green); padding: 4px 9px; border-radius: 5px;
+  background: rgba(61,220,132,0.10); border: 1px solid rgba(61,220,132,0.28);
+}
+.hero-card h3 {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px;
+}
+.hero-card p { font-size: 14px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.hero-card p code {
+  font-family: var(--mono); font-size: 13px; color: var(--ink);
+}
+.hc-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.hc-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
+  padding: 12px 20px; border-radius: 9px; transition: all .13s ease;
+}
+.hc-btn .arrow { transition: transform .13s; }
+.hc-btn:hover .arrow { transform: translateX(3px); }
+.hc-btn.primary {
+  background: var(--amber); color: #120c02;
+  box-shadow: 0 4px 18px rgba(245,166,35,0.20);
+}
+.hc-btn.primary:hover { filter: brightness(1.09); transform: translateY(-1px); }
+.hc-btn.big {
+  font-size: 17px; font-weight: 700; letter-spacing: 0.01em;
+  padding: 18px 32px; border-radius: 11px;
+  box-shadow: 0 6px 24px rgba(245,166,35,0.28);
+}
+.hc-btn.big .arrow { font-size: 19px; }
+.hc-btn.ghost { border: 1px solid var(--line); color: var(--muted); }
+.hc-btn.ghost:hover { color: var(--ink); border-color: var(--muted); background: var(--surface-2); }
+
+.hc-facts {
+  position: relative; z-index: 1;
+  list-style: none; align-self: center;
+  border-left: 1px solid var(--line-soft); padding-left: 28px;
+}
+.hc-facts li {
+  font-size: 12px; color: var(--muted); line-height: 1.45; padding: 9px 0;
+}
+.hc-facts li + li { border-top: 1px solid var(--line-soft); }
+.hc-facts li span {
+  display: block; font-family: var(--mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--amber); margin-bottom: 3px;
+}
+@media (max-width: 860px) {
+  .hero-card { grid-template-columns: 1fr; gap: 24px; padding: 26px 22px; }
+  .hc-facts { border-left: 0; border-top: 1px solid var(--line-soft); padding-left: 0; padding-top: 6px; }
+  .hero-card h3 { font-size: 23px; }
+}
+
+/* Feature tab (generator) in the top bar */
+.tab-feature {
+  display: inline-flex; align-items: center;
+  color: var(--amber) !important;
+  border: 1px solid rgba(245,166,35,0.35);
+  background: rgba(245,166,35,0.08);
+  font-weight: 600;
+}
+.tab-feature:hover { background: rgba(245,166,35,0.16) !important; color: var(--amber) !important; }
+
+/* ── Embedded tool views ───────────────────────────────── */
+.frame-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 22px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.frame-head .fh-title {
+  font-family: var(--mono); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--ink);
+}
+.frame-head .fh-path {
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+}
+.frame-head .fh-actions { margin-left: auto; display: flex; gap: 8px; }
+.fh-btn {
+  font-family: var(--mono); font-size: 11px; color: var(--muted);
+  padding: 6px 11px; border: 1px solid var(--line);
+  border-radius: 6px; background: none; cursor: pointer;
+  transition: all .12s; white-space: nowrap;
+}
+.fh-btn:hover { color: var(--ink); border-color: var(--muted); background: var(--surface-2); }
+
+.frame-wrap { flex: 1; min-height: 0; background: var(--bg); }
+.frame-wrap iframe {
+  width: 100%; height: 100%; border: 0; display: block;
+}
+
+footer.site {
+  padding: 18px 28px; border-top: 1px solid var(--line-soft);
+  font-family: var(--mono); font-size: 11px; color: var(--dim);
+  display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  flex-shrink: 0;
+}
+footer.site a:hover { color: var(--ink); }
+
+@media (max-width: 720px) {
+  .hero h1 { font-size: 30px; }
+  .brand .name small { display: none; }
+  .legacy-link { display: none; }
+  .home-inner { padding: 34px 18px 60px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Top bar ─────────────────────────────────────────── -->
+<div class="topbar">
+  <button class="brand" onclick="showView('home')">
+    <span class="mark">&#9888;</span>
+    <span class="name">Receiving Tools<small>v3</small></span>
+  </button>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="home"       onclick="showView('home')">Home</button>
+    <a class="tab tab-feature" href="Offspec-Generator.html" target="_blank" rel="noopener">&#9881; Offspec Generator</a>
+    <button class="tab"        data-tab="processcodes" onclick="showView('processcodes')">Process Code Offspecs</button>
+    <button class="tab"        data-tab="notifications" onclick="showView('notifications')">Notifications Guide</button>
+    <button class="tab"        data-tab="bookmarklets" onclick="showView('home'); scrollToSection('sec-bookmarklets')">Bookmarklets</button>
+  </nav>
+
+  <div class="topbar-right">
+    <a class="legacy-link" href="index.html">&#8617; Legacy dashboard</a>
+  </div>
+</div>
+
+<!-- ── Home ────────────────────────────────────────────── -->
+<main class="view active" id="view-home">
+  <div class="home-inner">
+
+    <!-- ── Left rail: Announcements ─────────────────────── -->
+    <aside class="home-rail">
+      <div class="ann-panel">
+        <div class="ann-head">
+          <span class="ann-title">&#128226; Announcements</span>
+          <button class="ann-lock" id="annLock" title="Admin edit">&#128274;</button>
+        </div>
+
+        <div class="ann-display" id="annDisplay">Loading&hellip;</div>
+
+        <div class="ann-edit" id="annEdit" hidden>
+          <textarea id="annInput" rows="10" spellcheck="true"
+            placeholder="Post news and instructions for the team&hellip;"></textarea>
+          <div class="ann-actions">
+            <button class="ann-btn ghost" id="annCancel">Cancel</button>
+            <button class="ann-btn save" id="annSave">Save</button>
+          </div>
+        </div>
+
+        <div class="ann-foot">
+          <span id="annMeta"></span>
+          <span id="fbStatus">&#9679; Connecting&hellip;</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ── Main content ─────────────────────────────────── -->
+    <div class="home-main">
+
+    <div class="hero">
+      <div class="eyebrow">Tradebe &middot; East Chicago</div>
+      <h1>Receiving Tools</h1>
+      <p>
+        Everything for off-spec paperwork in one place — process code rules, the notifications
+        reference, and the browser tools that pull data straight out of SAP.
+      </p>
+    </div>
+
+    <!-- ── Primary tool: Offspec Generator ─────────────── -->
+    <div class="sec-head"><h2>Primary Tool</h2><div class="rule"></div></div>
+
+    <div class="hero-card">
+      <div class="hc-glow"></div>
+      <div class="hc-main">
+        <div class="hc-top">
+          <span class="hc-icon">&#9881;</span>
+          <span class="hc-ver">v9</span>
+          <span class="hc-flag">PaddleOCR manifest-safe</span>
+        </div>
+        <h3>Offspec Generator</h3>
+        <p>
+          Fill the manifest header, tap the issue(s), and it writes a finished OFFSPEC
+          <code>.xlsx</code> straight into the real template — logo, borders and all three tabs
+          preserved. Built-in Notification Builder for the matching customer/CSR message.
+        </p>
+        <div class="hc-actions">
+          <a class="hc-btn primary big" href="Offspec-Generator.html" target="_blank" rel="noopener">
+            Open the Offspec Generator <span class="arrow">&#8599;</span>
+          </a>
+        </div>
+      </div>
+      <ul class="hc-facts">
+        <li><span>writes your template</span>Ready to send, not a blank rebuild</li>
+        <li><span>tap-to-build issues</span>Miscellaneous text auto-fills, stays editable</li>
+        <li><span>notification builder</span>Matching message, one-click copy</li>
+        <li><span>EC / WI / TN</span>Paperwork follows the selected site</li>
+      </ul>
+    </div>
+
+    <!-- ── Reference + Bookmarklets, side by side ──────── -->
+    <div class="cols">
+
+      <section class="col">
+        <div class="sec-head"><h2>Reference</h2><div class="rule"></div></div>
+        <div class="grid">
+
+          <button class="card a-amber" onclick="showView('processcodes')">
+            <span class="pill">Live</span>
+            <span class="icon">&#127991;</span>
+            <h3>Process Code Offspecs</h3>
+            <p>Receiving &amp; barcoding quick reference. Pick a code, read the rules, find the matching off-spec. Every entry is editable and syncs for everyone.</p>
+            <span class="foot">Open <span class="arrow">&rarr;</span></span>
+          </button>
+
+          <button class="card a-blue" onclick="showView('notifications')">
+            <span class="pill">Live</span>
+            <span class="icon">&#128203;</span>
+            <h3>Notifications Guide</h3>
+            <p>When to raise a notification, which code to use, and the wording that goes with it. Admin-editable, shared across the team.</p>
+            <span class="foot">Open <span class="arrow">&rarr;</span></span>
+          </button>
+
+          <a class="card a-pink" href="manifest-printer/index.html" target="_blank" rel="noopener">
+            <span class="icon">&#128424;</span>
+            <h3>Manifest Printer</h3>
+            <p>Fill out a Rejection, NON-HAZ to HAZ, or blank EPA manifest with a live preview, save the print job, then follow the built-in Wi-Fi steps to print at the manifest printer.</p>
+            <span class="foot">Open <span class="arrow">&#8599;</span></span>
+          </a>
+
+          <a class="card a-violet" href="PDF-Joiner.html" target="_blank" rel="noopener">
+            <span class="icon">&#128279;</span>
+            <h3>PDF Joiner</h3>
+            <p>Drop in multiple PDFs and merge them into a single file, right in the browser — reorder before joining, nothing leaves your machine.</p>
+            <span class="foot">Open <span class="arrow">&#8599;</span></span>
+          </a>
+
+          <a class="card a-green" href="Emergency-Zebra-Converter.html" target="_blank" rel="noopener">
+            <span class="pill">Offline</span>
+            <span class="icon">&#128424;</span>
+            <h3>Emergency Zebra Converter</h3>
+            <p>Network down? Convert confirmation &amp; barcode label PDFs to ZPL right in the browser so Zebra printers can read them — keeps essential warehouse barcodes printing during an outage.</p>
+            <span class="foot">Open <span class="arrow">&#8599;</span></span>
+          </a>
+
+        </div>
+      </section>
+
+      <section class="col" id="sec-bookmarklets">
+        <div class="sec-head"><h2>Bookmarklets</h2><div class="rule"></div></div>
+        <div class="grid">
+
+          <a class="card a-violet" href="sample-extractor.html" target="_blank" rel="noopener">
+            <span class="icon">&#129514;</span>
+            <h3>Sample # Grabber</h3>
+            <p>Extracts sample numbers from the SAP table in one click — no more squinting and retyping.</p>
+            <span class="foot">Install <span class="arrow">&#8599;</span></span>
+          </a>
+
+          <a class="card a-pink" href="hcode-export.html" target="_blank" rel="noopener">
+            <span class="pill">v6</span>
+            <span class="icon">&#128202;</span>
+            <h3>Visual H-Code</h3>
+            <p>Turns an H-Code report into an interactive grid — click a block, arrow-key through the rest, color-coded by code. Printable.</p>
+            <span class="foot">Install <span class="arrow">&#8599;</span></span>
+          </a>
+
+        </div>
+      </section>
+
+    </div>
+
+    </div><!-- /home-main -->
+
+  </div>
+
+  <footer class="site">
+    <span>tradebe / receiving tools</span>
+    <span><a href="index.html">legacy dashboard &#8599;</a></span>
+  </footer>
+</main>
+
+<!-- ── Process Code Offspecs ───────────────────────────── -->
+<section class="view" id="view-processcodes">
+  <div class="frame-head">
+    <span class="fh-title">Process Code Offspecs</span>
+    <span class="fh-path">/barcoding-lookup.html</span>
+    <div class="fh-actions">
+      <button class="fh-btn" onclick="reloadFrame('frame-processcodes')">&#8635; Reload</button>
+      <a class="fh-btn" href="barcoding-lookup.html" target="_blank" rel="noopener">Open in new tab &#8599;</a>
+    </div>
+  </div>
+  <div class="frame-wrap">
+    <iframe id="frame-processcodes" data-src="barcoding-lookup.html" title="Process Code Offspecs"></iframe>
+  </div>
+</section>
+
+<!-- ── Notifications Guide ─────────────────────────────── -->
+<section class="view" id="view-notifications">
+  <div class="frame-head">
+    <span class="fh-title">Notifications Guide</span>
+    <span class="fh-path">/notifications.html</span>
+    <div class="fh-actions">
+      <button class="fh-btn" onclick="reloadFrame('frame-notifications')">&#8635; Reload</button>
+      <a class="fh-btn" href="notifications.html" target="_blank" rel="noopener">Open in new tab &#8599;</a>
+    </div>
+  </div>
+  <div class="frame-wrap">
+    <iframe id="frame-notifications" data-src="notifications.html" title="Notifications Guide"></iframe>
+  </div>
+</section>
+
+<!-- Shared Firebase init (same project/config as the rest of the site) -->
+<script src="js/firebase-init.js"></script>
+
+<script>
+function showView(id) {
+  document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+  var view = document.getElementById('view-' + id);
+  if (view) view.classList.add('active');
+
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.classList.toggle('active', t.dataset.tab === id);
+  });
+
+  // Lazy-load the iframe the first time a tool is opened
+  var frame = view && view.querySelector('iframe[data-src]');
+  if (frame && !frame.src) frame.src = frame.dataset.src;
+
+  if (id === 'home') window.scrollTo(0, 0);
+  if (history.replaceState) history.replaceState(null, '', id === 'home' ? '#' : '#' + id);
+}
+
+function reloadFrame(frameId) {
+  var f = document.getElementById(frameId);
+  if (f && f.src) f.src = f.src;
+}
+
+function scrollToSection(elId) {
+  var el = document.getElementById(elId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Deep-link support: dashboard.html#notifications
+(function () {
+  var hash = (window.location.hash || '').replace('#', '');
+  if (hash && document.getElementById('view-' + hash)) showView(hash);
+})();
+
+// ── Announcements (Firebase-synced, admin-editable) ──────
+(function () {
+  var COLLECTION = 'ui';
+  var DOC_ID = 'dashboardAnnouncement';   // separate from the legacy sidebar doc
+  var PASSWORDS = ['bossnatalie', 'dfetter'];
+  var EMPTY = 'No announcements right now.';
+
+  var display = document.getElementById('annDisplay');
+  var editBox = document.getElementById('annEdit');
+  var input   = document.getElementById('annInput');
+  var lockBtn = document.getElementById('annLock');
+  var saveBtn = document.getElementById('annSave');
+  var cancelBtn = document.getElementById('annCancel');
+  var meta    = document.getElementById('annMeta');
+
+  var db = null;
+  var currentText = '';
+  var isAdmin = sessionStorage.getItem('annAdmin') === '1';
+
+  function render(text) {
+    currentText = text || '';
+    if (currentText.trim()) {
+      display.textContent = currentText;
+      display.classList.remove('empty');
+    } else {
+      display.textContent = EMPTY;
+      display.classList.add('empty');
+    }
+  }
+
+  function setMeta(ts) {
+    if (!ts || !ts.toDate) { meta.textContent = ''; return; }
+    try {
+      meta.textContent = 'Updated ' + ts.toDate().toLocaleString([], {
+        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+      });
+    } catch (e) { meta.textContent = ''; }
+  }
+
+  function reflectAdmin() {
+    lockBtn.classList.toggle('unlocked', isAdmin);
+    lockBtn.textContent = isAdmin ? '\u{1F513}' : '\u{1F512}';   // 🔓 / 🔒
+    lockBtn.title = isAdmin ? 'Editing unlocked — click to lock' : 'Admin edit';
+  }
+
+  function openEditor() {
+    input.value = currentText;
+    editBox.hidden = false;
+    display.style.display = 'none';
+    input.focus();
+  }
+  function closeEditor() {
+    editBox.hidden = true;
+    display.style.display = '';
+    render(currentText);   // reflect any remote update that arrived mid-edit
+  }
+
+  lockBtn.addEventListener('click', function () {
+    if (isAdmin) {
+      // lock back down
+      isAdmin = false;
+      sessionStorage.removeItem('annAdmin');
+      reflectAdmin();
+      closeEditor();
+      return;
+    }
+    var pw = window.prompt('Enter admin password to edit announcements:');
+    if (pw === null) return;
+    if (PASSWORDS.indexOf(pw.trim()) === -1) {
+      alert('Incorrect password.');
+      return;
+    }
+    isAdmin = true;
+    sessionStorage.setItem('annAdmin', '1');
+    reflectAdmin();
+    openEditor();
+  });
+
+  cancelBtn.addEventListener('click', closeEditor);
+
+  saveBtn.addEventListener('click', function () {
+    if (!db) { alert('Still connecting to Firebase — try again in a moment.'); return; }
+    var text = input.value;
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+    db.collection(COLLECTION).doc(DOC_ID).set({
+      text: text,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).then(function () {
+      saveBtn.disabled = false; saveBtn.textContent = 'Save';
+      closeEditor();
+    }).catch(function (e) {
+      saveBtn.disabled = false; saveBtn.textContent = 'Save';
+      alert('Save failed: ' + e.message);
+    });
+  });
+
+  reflectAdmin();
+
+  if (typeof onFirebaseReady === 'function') {
+    onFirebaseReady(function (database) {
+      db = database;
+      db.collection(COLLECTION).doc(DOC_ID).onSnapshot(function (snap) {
+        var data = snap.exists ? snap.data() : {};
+        // Don't clobber an admin who is mid-edit
+        if (editBox.hidden) render(data.text || '');
+        else currentText = data.text || '';
+        setMeta(data.updatedAt);
+      }, function (err) {
+        display.textContent = 'Could not load announcements.';
+        display.classList.add('empty');
+      });
+    });
+  } else {
+    render('');
+  }
+})();
+</script>
+</body>
+</html>

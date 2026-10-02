@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receiving Analytics Hub</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#08080e;--surface:#0d0d16;--card:#111120;--border:#1e1e36;
+  --text:#d0d0e0;--dim:#6a6a8a;--accent:#5b8aff;--accent2:#7c5bff;
+  --warn:#f0a030;--danger:#e05555;--ok:#40c878;
+}
+body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex}
+
+/* ── Sidebar ── */
+.sidebar{width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;overflow-y:auto}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.sidebar-brand{padding:20px 20px 16px;border-bottom:1px solid var(--border)}
+.sidebar-brand h1{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.3px}
+.sidebar-brand p{font-size:11px;color:var(--dim);margin-top:4px}
+.nav-section{padding:16px 20px 6px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--dim);font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;transition:all .15s;font-size:12px;color:var(--dim);border-left:3px solid transparent;user-select:none}
+.nav-item:hover{background:rgba(91,138,255,.06);color:var(--text)}
+.nav-item.active{background:rgba(91,138,255,.1);color:var(--accent);border-left-color:var(--accent)}
+.nav-item .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.nav-item .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.nav-item .badge{margin-left:auto;font-size:9px;padding:2px 7px;border-radius:8px;font-weight:700;letter-spacing:.5px}
+.badge-live{background:rgba(64,200,120,.15);color:var(--ok)}
+.badge-doc{background:rgba(240,160,48,.15);color:var(--warn)}
+.badge-locked{background:rgba(91,138,255,.12);color:var(--accent)}
+.nav-divider{height:1px;background:var(--border);margin:8px 20px}
+
+/* ── Main Area ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main iframe{flex:1;border:none;width:100%;height:100%}
+
+/* ── Home Panel ── */
+.home-panel{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;padding:40px}
+.home-panel .hero{text-align:center;max-width:600px}
+.home-panel .hero-icon{font-size:56px;margin-bottom:20px;opacity:.8}
+.home-panel h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px}
+.home-panel p{color:var(--dim);font-size:13px;line-height:1.7;margin-bottom:8px}
+.home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px;width:100%;max-width:700px}
+.home-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:20px;cursor:pointer;transition:all .2s;text-align:left}
+.home-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 20px rgba(91,138,255,.08)}
+.home-card .hc-icon{font-size:24px;margin-bottom:10px}
+.home-card h4{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px}
+.home-card p{font-size:11px;color:var(--dim);line-height:1.5;margin:0}
+
+/* ── Password Gate ── */
+.pw-gate{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.pw-gate h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--text)}
+.pw-gate p{font-size:12px;color:var(--dim);margin-bottom:4px}
+.pw-gate input{padding:10px 16px;font-size:14px;font-family:'JetBrains Mono',monospace;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);width:240px;outline:none;text-align:center}
+.pw-gate input:focus{border-color:var(--accent)}
+.pw-gate button{padding:8px 24px;font-size:13px;font-family:'Syne',sans-serif;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;cursor:pointer}
+.pw-gate button:hover{opacity:.9}
+.pw-gate .pw-err{color:var(--danger);font-size:11px;height:16px}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <h1>Receiving Analytics</h1>
+    <p>Q Manager Dashboard</p>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" data-page="home" onclick="navTo('home',this)">
+    <span class="icon">🏠</span>
+    <span>Home</span>
+  </div>
+
+  <div class="nav-section">Live Data</div>
+  <div class="nav-item" data-page="receiving" onclick="navTo('receiving',this)">
+    <span class="dot" style="background:var(--ok)"></span>
+    <span>Receiving Analytics</span>
+    <span class="badge badge-live">LIVE</span>
+  </div>
+
+  <div class="nav-divider"></div>
+  <div class="nav-section">Analysis Reports</div>
+  <div class="nav-item" data-page="mq-charts" onclick="navTo('mq-charts',this)">
+    <span class="dot" style="background:var(--accent)"></span>
+    <span>Material Quality</span>
+    <span class="badge badge-locked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+  </div>
+  <div class="nav-item" data-page="pw-charts" onclick="navTo('pw-charts',this)">
+    <span class="dot" style="background:var(--accent2)"></span>
+    <span>Paperwork Analysis</span>
+    <span class="badge badge-locked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+  </div>
+
+  <div class="nav-divider"></div>
+  <div class="nav-section">Printable Documents</div>
+  <div class="nav-item" data-page="mq-doc" onclick="navTo('mq-doc',this)">
+    <span class="icon">📄</span>
+    <span>Material Quality Report</span>
+    <span class="badge badge-locked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+  </div>
+  <div class="nav-item" data-page="pw-doc" onclick="navTo('pw-doc',this)">
+    <span class="icon">📄</span>
+    <span>Paperwork Report</span>
+    <span class="badge badge-locked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+  </div>
+</div>
+
+<div class="main" id="mainArea">
+  <!-- Home Panel (default) -->
+  <div class="home-panel" id="panel-home">
+    <div class="hero">
+      <div class="hero-icon">📊</div>
+      <h2>Receiving Analytics</h2>
+      <p>Centralized analytics hub for Tradebe Receiving operations. Track offspec submissions, email activity, material quality trends, and paperwork compliance — all in one place.</p>
+      <p style="color:var(--accent);font-size:11px;margin-top:4px">Select a report from the sidebar to get started.</p>
+    </div>
+    <div class="home-cards">
+      <div class="home-card" onclick="navTo('receiving',document.querySelector('[data-page=receiving]'))">
+        <div class="hc-icon">⚡</div>
+        <h4>Receiving Analytics</h4>
+        <p>Live offspec submission tracking and email activity log with real-time Firebase data.</p>
+      </div>
+      <div class="home-card" onclick="navTo('mq-charts',document.querySelector('[data-page=mq-charts]'))">
+        <div class="hc-icon">🔬</div>
+        <h4>Material Quality</h4>
+        <p>16-month analysis of 3,048 SAP quality notifications with charts and breakdowns.</p>
+      </div>
+      <div class="home-card" onclick="navTo('pw-charts',document.querySelector('[data-page=pw-charts]'))">
+        <div class="hc-icon">📋</div>
+        <h4>Paperwork Analysis</h4>
+        <p>Q1 2026 paperwork & generator data issue analysis — 301 notifications.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Password Gate (shown for locked pages) -->
+  <div class="pw-gate" id="panel-pwgate" style="display:none">
+    <h3>🔒 Protected Report</h3>
+    <p>Enter password to access this analysis</p>
+    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPw()">
+    <button onclick="checkPw()">Unlock</button>
+    <div class="pw-err" id="pwErr"></div>
+  </div>
+
+  <!-- Iframe (hidden until navigation) -->
+  <iframe id="contentFrame" style="display:none" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+</div>
+
+<script>
+var REPORT_PW = 'dfetter';
+var unlocked = false;
+var pendingPage = null;
+var currentNav = null;
+
+var PAGE_MAP = {
+  'receiving':  'receiving-analytics.html',
+  'mq-charts': 'material-quality-analytics.html',
+  'pw-charts': 'paperwork-analytics-q1-2026.html',
+  'mq-doc':    'material-quality-doc.html',
+  'pw-doc':    'paperwork-doc.html'
+};
+
+var LOCKED_PAGES = ['mq-charts','pw-charts','mq-doc','pw-doc'];
+
+function navTo(page, el) {
+  // Update active nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  currentNav = el;
+
+  if (page === 'home') {
+    document.getElementById('panel-home').style.display = '';
+    document.getElementById('panel-pwgate').style.display = 'none';
+    document.getElementById('contentFrame').style.display = 'none';
+    return;
+  }
+
+  // Check if locked
+  if (LOCKED_PAGES.indexOf(page) !== -1 && !unlocked) {
+    pendingPage = page;
+    document.getElementById('panel-home').style.display = 'none';
+    document.getElementById('contentFrame').style.display = 'none';
+    document.getElementById('panel-pwgate').style.display = '';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwErr').textContent = '';
+    setTimeout(function(){ document.getElementById('pwInput').focus(); }, 100);
+    return;
+  }
+
+  loadPage(page);
+}
+
+function loadPage(page) {
+  var url = PAGE_MAP[page];
+  if (!url) return;
+  document.getElementById('panel-home').style.display = 'none';
+  document.getElementById('panel-pwgate').style.display = 'none';
+  var frame = document.getElementById('contentFrame');
+  frame.style.display = '';
+  frame.src = url;
+}
+
+function checkPw() {
+  var pw = document.getElementById('pwInput').value;
+  if (pw === REPORT_PW) {
+    unlocked = true;
+    // Update badges to show unlocked
+    document.querySelectorAll('.badge-locked').forEach(function(b) {
+      b.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:2px"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>';
+      b.style.background = 'rgba(64,200,120,.15)';
+      b.style.color = '#40c878';
+    });
+    if (pendingPage) {
+      loadPage(pendingPage);
+      pendingPage = null;
+    }
+  } else {
+    document.getElementById('pwErr').textContent = 'Incorrect password';
+    document.getElementById('pwInput').style.borderColor = 'var(--danger)';
+    setTimeout(function(){ document.getElementById('pwInput').style.borderColor = ''; }, 1200);
+  }
+}
+</script>
+</body>
+</html>

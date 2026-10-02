@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Material Quality — Jan 2025–Apr 2026</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0c0f14;--surface:#141820;--s2:#1a1f2a;--border:#252d3a;--text:#e2e4e9;--muted:#8891a0;
+--accent:#4ea8de;--a2:#7c3aed;--red:#ef4444;--amber:#f59e0b;--green:#22c55e;--teal:#14b8a6;--pink:#d4537e;
+--font:'Segoe UI',system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5}
+.shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+.nav{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.nav-brand{padding:0 16px 14px;border-bottom:1px solid var(--border);margin-bottom:6px}
+.nav-brand h1{font-size:14px;font-weight:600}.nav-brand span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.nav-brand .period{font-size:11px;color:var(--accent);margin-top:3px}
+.nav-search{padding:6px 16px 10px}
+.nav-search input{width:100%;padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;outline:none}
+.nav-search input:focus{border-color:var(--accent)}
+.ns{padding:10px 16px 4px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;font-size:12px;color:var(--muted);transition:.15s}
+.ni:hover{background:var(--s2);color:var(--text)}
+.ni.active{background:rgba(78,168,222,.1);color:var(--accent);border-right:2px solid var(--accent)}
+.ni .d{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ni .b{margin-left:auto;background:var(--s2);padding:1px 7px;border-radius:8px;font-size:10px;font-weight:600}
+.main{padding:24px 28px;overflow-y:auto}
+.page{display:none}.page.active{display:block}
+.topbar{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.topbar h2{font-size:18px;font-weight:600}.topbar .sub{font-size:11px;color:var(--muted)}
+.toggle-group{display:flex;gap:0;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.toggle-group button{padding:5px 14px;font-size:11px;background:var(--s2);color:var(--muted);border:none;cursor:pointer;font-weight:500;transition:.15s}
+.toggle-group button.active{background:var(--accent);color:#fff}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.metric .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.metric .v{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.metric .s{font-size:10px;color:var(--muted);margin-top:2px}
+.v.red{color:var(--red)}.v.amber{color:var(--amber)}.v.green{color:var(--green)}.v.sm{font-size:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px}
+.card h3{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card h3 .pill{font-size:9px;background:var(--s2);padding:2px 7px;border-radius:6px;color:var(--muted)}
+.cw{position:relative;width:100%;height:280px}.cw.tall{height:340px}.cw.short{height:200px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+table.dt{width:100%;border-collapse:collapse;font-size:12px}
+table.dt th{text-align:left;padding:6px 8px;font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border);font-weight:600}
+table.dt td{padding:6px 8px;border-bottom:1px solid var(--border)}
+table.dt tr:hover{background:var(--s2)}
+table.dt .n{text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+table.dt .hi{color:var(--red);font-weight:700}
+.bar-i{display:flex;align-items:center;gap:6px}.bar-i .b{height:5px;border-radius:3px;min-width:2px}
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-row select{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--s2);color:var(--text);font-size:12px;outline:none}
+.search-results{padding:8px 0;font-size:12px;color:var(--muted)}
+.sr-item{padding:8px 12px;border-bottom:1px solid var(--border);cursor:pointer}
+.sr-item:hover{background:var(--s2)}
+.sr-item .sr-name{color:var(--text);font-weight:600}.sr-item .sr-count{color:var(--accent)}
+@media(max-width:900px){.shell{grid-template-columns:1fr}.nav{display:none}.metrics{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+.print-all-btn{position:fixed;bottom:16px;right:16px;z-index:200;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 12px rgba(0,0,0,.4);font-family:var(--font);transition:opacity .2s}
+.print-all-btn:hover{opacity:.85}
+.print-all-btn svg{width:16px;height:16px;fill:currentColor}
+@media print{
+  *{color-adjust:exact;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff!important;color:#1a1a1a!important}
+  .shell{display:block!important;grid-template-columns:none!important}
+  .nav,.nav-search,.print-all-btn,.toggle-group{display:none!important}
+  .main{padding:0!important;overflow:visible!important}
+  .page{display:block!important;page-break-after:always;padding:20px 0}
+  .page:last-child{page-break-after:avoid}
+  .page::before{content:attr(data-print-title);display:block;font-size:16pt;font-weight:700;color:#1a6fa0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #1a6fa0}
+  .metrics{grid-template-columns:repeat(5,1fr)!important;gap:8px!important;margin-bottom:14px!important}
+  .metric{border:1px solid #ccc!important;background:#f9f9f9!important;padding:8px 10px!important}
+  .metric .l{color:#555!important}.metric .v{color:#1a1a1a!important;font-size:16px!important}
+  .metric .v.red{color:#c00!important}.metric .v.amber{color:#b07000!important}.metric .v.green{color:#1a8040!important}
+  .card{background:#fff!important;border:1px solid #ddd!important;page-break-inside:avoid;margin-bottom:12px!important;padding:12px!important}
+  .card h3{font-size:11pt!important;color:#1a1a1a!important}
+  .card h3 .pill{background:#eee!important;color:#555!important}
+  .cw,.cw.tall,.cw.short{height:220px!important}
+  canvas{max-width:100%!important}
+  .grid2{grid-template-columns:1fr 1fr!important;gap:10px!important}
+  table.dt th{color:#555!important;border-bottom:2px solid #999!important;background:#f5f5f5!important}
+  table.dt td{border-bottom:1px solid #ddd!important;color:#1a1a1a!important}
+  .topbar h2{color:#1a1a1a!important;font-size:14pt!important}.topbar .sub{color:#555!important}
+  #search-results{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="nav">
+  <div class="nav-brand"><span>Tradebe analytics</span><h1>Material quality issues</h1><div class="period">Jan 2025 – Apr 2026</div></div>
+  <div class="nav-search"><input id="global-search" placeholder="Search producers, waste codes..." /></div>
+  <div class="ns">Core analysis</div>
+  <div class="ni active" data-page="overview"><div class="d" style="background:var(--accent)"></div>Overview<span class="b">1,826</span></div>
+  <div class="ni" data-page="trends"><div class="d" style="background:var(--green)"></div>Trends</div>
+  <div class="ni" data-page="producers"><div class="d" style="background:var(--amber)"></div>Producers</div>
+  <div class="ni" data-page="financial"><div class="d" style="background:var(--green)"></div>Cost-to-serve</div>
+  <div class="ni" data-page="waste"><div class="d" style="background:var(--a2)"></div>Waste profiles</div>
+  <div class="ni" data-page="centers"><div class="d" style="background:var(--teal)"></div>Service centers</div>
+  <div class="ns">Resolution</div>
+  <div class="ni" data-page="resolution"><div class="d" style="background:var(--red)"></div>Resolution times</div>
+  <div class="ni" data-page="cerlab"><div class="d" style="background:var(--amber)"></div>CER vs LabPack</div>
+  <div class="ni" data-page="metals"><div class="d" style="background:var(--pink)"></div>Metals results<span class="b">671</span></div>
+  <div class="ns">Production impact</div>
+  <div class="ni" data-page="uom"><div class="d" style="background:var(--amber)"></div>UOM recheck<span class="b">153</span></div>
+  <div class="ni" data-page="piece"><div class="d" style="background:var(--muted)"></div>Piece counts<span class="b">398</span></div>
+  <div class="ns">Insights</div>
+  <div class="ni" data-page="outliers"><div class="d" style="background:var(--red)"></div>Outliers &amp; trends</div>
+</nav>
+<main class="main">
+
+<!-- SEARCH RESULTS -->
+<div class="page" id="search-results">
+  <div class="topbar"><div><h2>Search results</h2><div class="sub" id="sr-query"></div></div></div>
+  <div id="sr-body"></div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page active" id="overview" data-print-title="Overview — Core Issue Analysis">
+  <div class="topbar"><div><h2>Overview</h2><div class="sub">3,048 total notifications — 1,826 core analysis — Jan 2025 through Apr 2026</div></div></div>
+  <div class="metrics">
+    <div class="metric"><div class="l">Total (all types)</div><div class="v">3,048</div></div>
+    <div class="metric"><div class="l">Core analysis</div><div class="v">1,826</div><div class="s">Excl. metals, UOM, piece</div></div>
+    <div class="metric"><div class="l">Avg resolution (core)</div><div class="v amber">9.6d</div></div>
+    <div class="metric"><div class="l">Worst quarter</div><div class="v red sm">Q4 '25: 13.7d</div></div>
+    <div class="metric"><div class="l">Peak volume</div><div class="v sm">Q2 '25: 446</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Core issue types</h3><div class="cw"><canvas id="ov-types"></canvas></div></div>
+    <div class="card"><h3>All categories (incl. metals/UOM/piece)</h3><div class="cw"><canvas id="ov-all"></canvas></div></div>
+  </div>
+  <div class="card"><h3>Top 10 producers <span class="pill">core issues only</span></h3><div class="cw tall"><canvas id="ov-prod"></canvas></div></div>
+</div>
+
+<!-- TRENDS -->
+<div class="page" id="trends" data-print-title="Trends">
+  <div class="topbar"><div><h2>Trends</h2><div class="sub">Core issues — Jan 2025 through Apr 2026</div></div>
+    <div class="toggle-group" id="trend-toggle"><button class="active" data-mode="monthly">Monthly</button><button data-mode="quarterly">Quarterly</button></div>
+  </div>
+  <div class="card"><h3>Volume over time <span class="pill" id="trend-label">monthly</span></h3><div class="cw tall"><canvas id="trend-chart"></canvas></div></div>
+  <div class="card"><h3>Stacked by issue type <span class="pill" id="stack-label">monthly</span></h3><div class="cw tall"><canvas id="stack-chart"></canvas></div></div>
+  <div class="card"><h3>Resolution time trend</h3><div class="cw"><canvas id="res-trend"></canvas></div></div>
+</div>
+
+<!-- PRODUCERS -->
+<div class="page" id="producers" data-print-title="Top Producers">
+  <div class="topbar"><div><h2>Producer analysis</h2><div class="sub">Core issues — Jan 2025 through Apr 2026</div></div></div>
+  <div class="filter-row"><select id="prod-filter"><option value="all">All issue types</option><option value="Physical Analysis">Physical analysis</option><option value="Chemical Analysis">Chemical analysis</option><option value="Haz Code Issue">Haz code issue</option><option value="Profile issues">Profile issues</option><option value="Weight Discrepancy">Weight discrepancy</option></select></div>
+  <div class="card"><table class="dt">
+    <thead><tr><th>Producer</th><th class="n">Total</th><th class="n">Physical</th><th class="n">Chemical</th><th class="n">Haz Code</th><th class="n">Profile</th><th class="n">Weight</th><th>Volume</th></tr></thead>
+    <tbody id="prod-table"></tbody>
+  </table></div>
+</div>
+
+<!-- WASTE PROFILES -->
+<div class="page" id="waste" data-print-title="Waste Profiles">
+  <div class="topbar"><div><h2>Waste profiles</h2><div class="sub">Specific waste profiles generating the most quality flags — Jan 2025 through Apr 2026</div></div></div>
+  <div class="card"><h3>Top flagged profiles <span class="pill">profile # with process code</span></h3><div class="cw tall"><canvas id="waste-chart"></canvas></div></div>
+  <div class="card"><table class="dt">
+    <thead><tr><th>Waste profile</th><th>Process</th><th class="n">Count</th><th class="n">Avg days</th><th>Top producer</th><th>Primary issue</th></tr></thead>
+    <tbody id="waste-table"></tbody>
+  </table></div>
+</div>
+
+<!-- FINANCIAL / COST-TO-SERVE -->
+<div class="page" id="financial" data-print-title="Cost-to-Serve Analysis">
+  <div class="topbar"><div><h2>Cost-to-serve analysis</h2><div class="sub">Revenue vs. problems — normalized rankings — Jan 2025 through Apr 2026</div></div></div>
+  <div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+    <div class="metric"><div class="l">Worst $/hr return</div><div class="v sm red">NSA: $35/hr</div><div class="s">52 notifs on $2,711 rev</div></div>
+    <div class="metric"><div class="l">Best $/hr return</div><div class="v sm green">Axalta USA: $1,486/hr</div><div class="s">21 notifs on $62K rev</div></div>
+    <div class="metric"><div class="l">Most notifs/$10K</div><div class="v sm red">NSA: 191.8</div></div>
+    <div class="metric"><div class="l">Medline note</div><div class="v sm amber">$13.5M excluded</div><div class="s">Replaced w/ median $1,009</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Worst cost-to-serve <span class="pill red">high problems, low revenue</span></h3><table class="dt">
+      <thead><tr><th>Producer</th><th class="n">Notifs</th><th class="n">Revenue</th><th class="n">Per $10K</th><th class="n">Est. hrs</th><th class="n">$/hr</th></tr></thead>
+      <tbody id="fin-worst"></tbody>
+    </table></div>
+    <div class="card"><h3>Best cost-to-serve <span class="pill" style="background:rgba(34,197,94,.15);color:var(--green)">low problems, high revenue</span></h3><table class="dt">
+      <thead><tr><th>Producer</th><th class="n">Notifs</th><th class="n">Revenue</th><th class="n">$/hr</th></tr></thead>
+      <tbody id="fin-best"></tbody>
+    </table></div>
+  </div>
+  <div class="card"><h3>SC performance (normalized per $100K revenue)</h3><table class="dt">
+    <thead><tr><th>Service center</th><th class="n">Notifs</th><th class="n">Revenue</th><th class="n">Per $100K</th><th class="n">Avg days</th><th>Assessment</th></tr></thead>
+    <tbody id="fin-sc"></tbody>
+  </table></div>
+</div>
+
+<!-- OUTLIERS & TRENDS -->
+<div class="page" id="outliers" data-print-title="Outliers & Emerging Trends">
+  <div class="topbar"><div><h2>Outliers &amp; emerging trends</h2><div class="sub">Patterns worth investigating — Jan 2025 through Apr 2026</div></div></div>
+  <div class="card" style="border-left:3px solid var(--red)">
+    <h3>SC Pittsburgh haz code bottleneck</h3>
+    <p style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">Haz Code Issues average <strong style="color:var(--red)">39.0 days</strong> at Pittsburgh vs. <strong>10.3 days</strong> at East Chicago — nearly 4× slower on the identical issue type. Chemical Analysis shows a similar gap (13.6 vs. 6.4 days). This is a center-level process or staffing issue, not a producer mix problem.</p>
+    <div class="cw short"><canvas id="out-sc-haz"></canvas></div>
+  </div>
+  <div class="card" style="border-left:3px solid var(--amber)">
+    <h3>Seasonal resolution pattern</h3>
+    <p style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">August (15.3d), October (12.9d), November (15.2d), and December (13.3d) consistently spike. Summer coverage and holiday staffing are the likely drivers.</p>
+    <div class="cw short"><canvas id="out-seasonal"></canvas></div>
+  </div>
+  <div class="card" style="border-left:3px solid var(--amber)">
+    <h3>Axalta trending worse while others improve</h3>
+    <p style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">Axalta (both SAP entries) doubled from 15 notifications in H1 2025 to 31 in Q4+Q1 2026. Meanwhile, prior top offenders improved: NSA −40, Univar Clearfield −38, SUNY Buffalo −9.</p>
+    <div class="cw"><canvas id="out-axalta"></canvas></div>
+  </div>
+  <div class="card" style="border-left:3px solid var(--a2)">
+    <h3>Dual paperwork + material offenders</h3>
+    <p style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px">These producers appear in both datasets. They need holistic corrective actions, not two separate conversations.</p>
+    <table class="dt">
+      <thead><tr><th>Producer</th><th class="n">Paperwork</th><th class="n">Material</th><th class="n">Combined</th><th class="n">Mat. revenue</th></tr></thead>
+      <tbody id="out-dual"></tbody>
+    </table>
+  </div>
+  <div class="card" style="border-left:3px solid var(--teal)">
+    <h3>Profile issues Q4 2025 spike</h3>
+    <p style="font-size:13px;color:var(--text);line-height:1.6">Profile Issues resolution jumped from 3.6 days (Q2 2025) to 18.2 days (Q4 2025) — a 5× increase, concentrated in university lab pack accounts. Q1 2026 partially recovered to 9.3 days.</p>
+  </div>
+</div>
+
+<!-- SERVICE CENTERS -->
+<div class="page" id="centers" data-print-title="Service Centers">
+  <div class="topbar"><div><h2>Service centers</h2><div class="sub">Core issues — Jan 2025 through Apr 2026</div></div></div>
+  <div class="grid2">
+    <div class="card"><h3>Distribution</h3><div class="cw"><canvas id="sc-donut"></canvas></div></div>
+    <div class="card"><h3>Breakdown</h3><table class="dt">
+      <thead><tr><th>Center</th><th class="n">Count</th><th class="n">% of total</th></tr></thead>
+      <tbody id="sc-table"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- RESOLUTION -->
+<div class="page" id="resolution" data-print-title="Resolution Times">
+  <div class="topbar"><div><h2>Resolution times</h2><div class="sub">Core issues — Jan 2025 through Apr 2026</div></div></div>
+  <div class="metrics" style="grid-template-columns:repeat(6,1fr)">
+    <div class="metric"><div class="l">Physical</div><div class="v sm">8.1d</div><div class="s">med 2.0</div></div>
+    <div class="metric"><div class="l">Chemical</div><div class="v sm">8.5d</div><div class="s">med 3.0</div></div>
+    <div class="metric"><div class="l">Haz code</div><div class="v sm red">15.0d</div><div class="s">med 8.0</div></div>
+    <div class="metric"><div class="l">Profile</div><div class="v sm amber">9.3d</div><div class="s">med 5.0</div></div>
+    <div class="metric"><div class="l">Weight</div><div class="v sm">9.2d</div><div class="s">med 6.0</div></div>
+    <div class="metric"><div class="l">PCBs</div><div class="v sm red">34.7d</div><div class="s">med 22.0, n=7</div></div>
+  </div>
+  <div class="card"><h3>Worst resolution times</h3><table class="dt">
+    <thead><tr><th>Producer</th><th>Issue type</th><th>Description</th><th class="n">Days</th><th>Service center</th></tr></thead>
+    <tbody id="worst-table"></tbody>
+  </table></div>
+  <div class="card"><h3>Resolution by issue type</h3><div class="cw"><canvas id="res-box"></canvas></div></div>
+</div>
+
+<!-- CER vs LABPACK -->
+<div class="page" id="cerlab" data-print-title="CER vs LabPack">
+  <div class="topbar"><div><h2>CER vs LabPack resolution</h2><div class="sub">Core issues only — excludes bulk liquids — Jan 2025 through Apr 2026</div></div>
+    <div class="toggle-group" id="cl-toggle"><button class="active" data-mode="monthly">Monthly</button><button data-mode="quarterly">Quarterly</button></div>
+  </div>
+  <div class="metrics" style="grid-template-columns:repeat(6,1fr)">
+    <div class="metric" style="border-left:3px solid var(--accent)"><div class="l">CER volume</div><div class="v">1,457</div></div>
+    <div class="metric" style="border-left:3px solid var(--accent)"><div class="l">CER avg resolution</div><div class="v green">6.7d</div><div class="s">Median 3.0d</div></div>
+    <div class="metric" style="border-left:3px solid var(--accent)"><div class="l">CER &gt;10 days</div><div class="v">20.6%</div></div>
+    <div class="metric" style="border-left:3px solid var(--a2)"><div class="l">LabPack volume</div><div class="v">335</div></div>
+    <div class="metric" style="border-left:3px solid var(--a2)"><div class="l">LabPack avg resolution</div><div class="v red">22.8d</div><div class="s">Median 18.0d — 3.4× slower</div></div>
+    <div class="metric" style="border-left:3px solid var(--a2)"><div class="l">LabPack &gt;10 days</div><div class="v red">62.4%</div></div>
+  </div>
+  <div class="card"><h3>Resolution trend — CER vs LabPack</h3><div class="cw tall"><canvas id="cl-trend"></canvas></div></div>
+  <div class="grid2">
+    <div class="card"><h3>CER resolution distribution</h3><div class="cw short"><canvas id="cl-cer-dist"></canvas></div></div>
+    <div class="card"><h3>LabPack resolution distribution</h3><div class="cw short"><canvas id="cl-lp-dist"></canvas></div></div>
+  </div>
+  <div class="card"><h3>Resolution by issue type — CER vs LabPack</h3><table class="dt">
+    <thead><tr><th>Issue type</th><th class="n" colspan="2" style="text-align:center;border-left:2px solid var(--accent)">CER (Drums)</th><th class="n" colspan="2" style="text-align:center;border-left:2px solid var(--a2)">LabPack</th><th class="n">LP/CER ratio</th></tr>
+    <tr><th></th><th class="n" style="border-left:2px solid var(--accent)">Count</th><th class="n">Avg days</th><th class="n" style="border-left:2px solid var(--a2)">Count</th><th class="n">Avg days</th><th class="n"></th></tr></thead>
+    <tbody id="cl-coding-table"></tbody>
+  </table></div>
+  <div class="card"><h3>Quarterly breakdown</h3><table class="dt">
+    <thead><tr><th>Quarter</th><th class="n" colspan="2" style="text-align:center;border-left:2px solid var(--accent)">CER</th><th class="n" colspan="2" style="text-align:center;border-left:2px solid var(--a2)">LabPack</th></tr>
+    <tr><th></th><th class="n" style="border-left:2px solid var(--accent)">Count</th><th class="n">Avg days</th><th class="n" style="border-left:2px solid var(--a2)">Count</th><th class="n">Avg days</th></tr></thead>
+    <tbody id="cl-qtr-table"></tbody>
+  </table></div>
+</div>
+
+<!-- METALS -->
+<div class="page" id="metals" data-print-title="Awaiting Metals Results">
+  <div class="topbar"><div><h2>Awaiting metals results</h2><div class="sub">671 notifications — tracked for resolution time only — Jan 2025 through Apr 2026</div></div></div>
+  <div class="metrics" style="grid-template-columns:repeat(5,1fr)">
+    <div class="metric"><div class="l">Total</div><div class="v">671</div></div>
+    <div class="metric"><div class="l">Mean resolution</div><div class="v">7.6d</div></div>
+    <div class="metric"><div class="l">Median</div><div class="v green">7.0d</div></div>
+    <div class="metric"><div class="l">Exceeded 14 days</div><div class="v amber">36</div><div class="s">5.4% of total</div></div>
+    <div class="metric"><div class="l">Max</div><div class="v red">66d</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Resolution distribution</h3><div class="cw"><canvas id="metals-dist"></canvas></div></div>
+    <div class="card"><h3>Quarterly volume &amp; avg days</h3><div class="cw"><canvas id="metals-qtr"></canvas></div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Quarterly performance</h3><table class="dt">
+      <thead><tr><th>Quarter</th><th class="n">Volume</th><th class="n">Mean</th><th class="n">Median</th><th class="n">&gt;14d</th><th class="n">% &gt;14d</th></tr></thead>
+      <tbody id="metals-qtr-table"></tbody>
+    </table></div>
+    <div class="card"><h3>Top service centers</h3><table class="dt">
+      <thead><tr><th>Center</th><th class="n">Count</th></tr></thead>
+      <tbody id="metals-sc-table"></tbody>
+    </table></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>Top producers</h3><table class="dt">
+      <thead><tr><th>Producer</th><th class="n">Count</th></tr></thead>
+      <tbody id="metals-prod-table"></tbody>
+    </table></div>
+    <div class="card"><h3>Top waste profiles</h3><table class="dt">
+      <thead><tr><th>Profile (process)</th><th class="n">Count</th></tr></thead>
+      <tbody id="metals-wp-table"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- UOM -->
+<div class="page" id="uom" data-print-title="UOM Rechecks">
+  <div class="topbar"><div><h2>UOM rechecks</h2><div class="sub">153 total — avg 4.4 days — finding drums &amp; confirming sizes slows production</div></div></div>
+  <div class="card"><h3>Top offenders <span class="pill">XPO = 17% of all UOM rechecks</span></h3><table class="dt">
+    <thead><tr><th>Producer</th><th class="n">Count</th><th>Volume</th></tr></thead>
+    <tbody id="uom-table"></tbody>
+  </table></div>
+</div>
+
+<!-- PIECE -->
+<div class="page" id="piece" data-print-title="Piece Counts">
+  <div class="topbar"><div><h2>Piece counts</h2><div class="sub">398 total — avg 2.8 days — manual counting slows production throughput</div></div></div>
+  <div class="card"><h3>Top offenders</h3><table class="dt">
+    <thead><tr><th>Producer</th><th class="n">Count</th><th>Volume</th></tr></thead>
+    <tbody id="piece-table"></tbody>
+  </table></div>
+</div>
+
+</main>
+</div>
+<script>
+const tx='#8891a0',grd='rgba(255,255,255,0.05)';
+const cd={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+  scales:{x:{grid:{color:grd},ticks:{color:tx,font:{size:10}}},y:{grid:{color:grd},ticks:{color:tx,font:{size:10}}}}};
+const yng={...cd.scales.y,grid:{display:false},ticks:{...cd.scales.y.ticks,autoSkip:false}};
+const colors=['#4ea8de','#f59e0b','#ef4444','#7c3aed','#14b8a6','#22c55e','#d4537e','#888780','#4ea8de'];
+
+// NAV
+document.querySelectorAll('.ni').forEach(n=>n.addEventListener('click',()=>{
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  n.classList.add('active');document.getElementById(n.dataset.page).classList.add('active');
+}));
+
+// SEARCH
+const producers=[['Univar Solutions Clearfield Plant',76],['National Security Agency',52],['University of Illinois',42],['US Industrial Technologies',36],
+  ['Axalta Coating Systems LLC',35],['GFL Environmental Services USA',34],['SUNY at Buffalo',25],['Old Dominion Freight Lines',25],
+  ['University of Chicago',21],['Axalta Coating Systems USA LLC',21],['Defense Distribution Center Susquehanna',21],['Univar Solutions USA Commerce',21],
+  ['Daubert Chemical Avenue',20],['MU Resource Recovery Center',20],['EnviroServe Inc',19],['Univar Solutions USA - IN',18],
+  ['Joint Base Andrews',18],['Subaru of Indiana Automotive',18],['Univar MN St Paul',18],['Univar Solutions Binghamton',17],
+  ['XPO Logistics (BCA)',10],['XPO Logistics (XNW)',8],['Advanced Environmental Services',15],['Sherwin-Williams Greensboro',12],
+  ['Vibrantz Color Solutions',8],['Medline Industries',6]];
+const wasteStreams=[['1000194662 (ZV1-Non Lab Packs Depack/Fuels)',38],['1000037788 (ZP2-Lab Pack Reactives)',23],
+  ['1000037775 (ZP-Lab Pack Incineration)',16],['1000226725 (ZV1-Non Lab Packs Depack/Fuels)',14],
+  ['1000037682 (ZI-Lab Pack Incineration)',12],['1000194663 (ZV1-Non Lab Packs Depack/Fuels)',11],
+  ['1000193510 (AF1-Aerosols Fuel)',9],['1000037776 (ZP1-Lab Pack PIH)',9],
+  ['1000558440 (XM2-Oxidizer Inorg Neutral)',8],['1000532649 (RS2-Non-Halo Organic Solids)',8],
+  ['1000393101 (NM2-Neutral Inorg Solids) [metals]',23],['1000053539 (LA1-Acids Inorganic) [metals]',23]];
+
+document.getElementById('global-search').addEventListener('input', function(e){
+  const q = e.target.value.toLowerCase().trim();
+  if(q.length < 2){document.getElementById('search-results').classList.remove('active');
+    const prev=document.querySelector('.ni.active');if(prev)document.getElementById(prev.dataset.page).classList.add('active');return;}
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('search-results').classList.add('active');
+  document.getElementById('sr-query').textContent=`Searching: "${e.target.value}"`;
+  const matches=[];
+  producers.forEach(([name,count])=>{if(name.toLowerCase().includes(q))matches.push({name,count,type:'Producer'})});
+  wasteStreams.forEach(([name,count])=>{if(name.toLowerCase().includes(q))matches.push({name,count,type:'Waste profile'})});
+  const html=matches.length?matches.map(m=>`<div class="sr-item"><span class="sr-name">${m.name}</span> <span style="color:var(--muted);font-size:11px">(${m.type})</span> — <span class="sr-count">${m.count} notifications</span></div>`).join(''):'<div style="padding:20px;color:var(--muted)">No matches found</div>';
+  document.getElementById('sr-body').innerHTML=html;
+});
+
+// OVERVIEW CHARTS
+new Chart(document.getElementById('ov-types'),{type:'doughnut',
+  data:{labels:['Physical (548)','Chemical (528)','Haz Code (285)','Profile (266)','Weight (187)','PCBs (7)'],
+    datasets:[{data:[548,528,285,266,187,7],backgroundColor:colors,borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:tx,font:{size:10},boxWidth:8,padding:6}}}}});
+
+new Chart(document.getElementById('ov-all'),{type:'bar',
+  data:{labels:['Metals','Physical','Chemical','Piece Count','Haz Code','Profile','Weight','UOM','PCBs'],
+    datasets:[{data:[671,548,528,398,285,266,187,153,7],backgroundColor:colors,borderRadius:3}]},
+  options:{...cd,indexAxis:'y',scales:{...cd.scales,y:yng}}});
+
+new Chart(document.getElementById('ov-prod'),{type:'bar',
+  data:{labels:['Univar Clearfield','NSA','Univ. Illinois','US Industrial','Axalta LLC','GFL Env.','SUNY Buffalo','Old Dominion','Univ. Chicago','Axalta USA'],
+    datasets:[{data:[76,52,42,36,35,34,25,25,21,21],backgroundColor:'#4ea8de',borderRadius:3}]},
+  options:{...cd,indexAxis:'y',scales:{...cd.scales,y:yng}}});
+
+// TRENDS
+const mLabels=['Jan 25','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan 26','Feb','Mar','Apr'];
+const mData=[127,97,109,175,154,117,152,125,121,125,107,118,82,84,91,42];
+const qLabels=['Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26*'];
+const qData=[333,446,398,350,257,42];
+const qPhys=[110,139,112,100,74,13],qChem=[113,134,91,98,75,17],qHaz=[64,70,74,42,33,2],qProf=[28,56,67,68,44,3],qWt=[17,44,52,39,28,7];
+const mPhys=[37,32,41,55,53,31,53,34,25,32,37,31,27,25,20,13];
+const mChem=[38,33,42,54,44,36,25,30,36,33,36,29,22,25,26,17];
+const mHaz=[28,13,23,27,24,19,31,20,23,21,10,11,12,10,11,2];
+const mProf=[8,11,9,22,16,18,23,22,22,18,23,27,10,21,13,3];
+const mWt=[8,4,5,14,15,15,20,19,13,18,3,18,7,3,18,7];
+const qResAvg=[10.5,7.4,10.1,13.7,7.7,2.1];
+const mResAvg=[11.3,11.2,9.3,5.8,7.1,10.2,8.3,11.6,10.7,15.2,15.8,10.2,7.7,9.0,6.8,2.1];
+
+let trendChart, stackChart, resTrendChart;
+function buildTrend(mode){
+  const isM=mode==='monthly';
+  const labels=isM?mLabels:qLabels;
+  document.getElementById('trend-label').textContent=mode;
+  document.getElementById('stack-label').textContent=mode;
+  if(trendChart)trendChart.destroy();
+  if(stackChart)stackChart.destroy();
+  if(resTrendChart)resTrendChart.destroy();
+  trendChart=new Chart(document.getElementById('trend-chart'),{type:'bar',
+    data:{labels,datasets:[{label:'Core notifications',data:isM?mData:qData,backgroundColor:'#4ea8de',borderRadius:3}]},
+    options:{...cd,plugins:{legend:{display:false}},scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}}}});
+  stackChart=new Chart(document.getElementById('stack-chart'),{type:'bar',
+    data:{labels,datasets:[
+      {label:'Physical',data:isM?mPhys:qPhys,backgroundColor:'#4ea8de'},
+      {label:'Chemical',data:isM?mChem:qChem,backgroundColor:'#f59e0b'},
+      {label:'Haz Code',data:isM?mHaz:qHaz,backgroundColor:'#ef4444'},
+      {label:'Profile',data:isM?mProf:qProf,backgroundColor:'#7c3aed'},
+      {label:'Weight',data:isM?mWt:qWt,backgroundColor:'#14b8a6'},
+    ]},
+    options:{...cd,scales:{x:{...cd.scales.x,stacked:true,grid:{display:false}},y:{...cd.scales.y,stacked:true}},
+      plugins:{legend:{display:true,position:'top',labels:{color:tx,font:{size:10},boxWidth:8,padding:10}}}}});
+  resTrendChart=new Chart(document.getElementById('res-trend'),{type:'line',
+    data:{labels:isM?mLabels:qLabels,datasets:[{label:'Avg days',data:isM?mResAvg:qResAvg,borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#ef4444'}]},
+    options:{...cd,plugins:{legend:{display:false}},scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}},y:{...cd.scales.y,title:{display:true,text:'Avg days to resolution',color:tx,font:{size:10}}}}}});
+}
+buildTrend('monthly');
+document.getElementById('trend-toggle').addEventListener('click',e=>{
+  if(!e.target.dataset.mode)return;
+  document.querySelectorAll('#trend-toggle button').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');buildTrend(e.target.dataset.mode);
+});
+
+// PRODUCERS TABLE
+const prodData=[
+  ['Univar Solutions Clearfield Plant',76,18,7,37,9,5],['National Security Agency',52,50,0,0,0,2],
+  ['University of Illinois',42,0,1,28,13,0],['US Industrial Technologies',36,9,10,0,12,5],
+  ['Axalta Coating Systems LLC',35,24,9,0,0,2],['GFL Environmental Services USA',34,6,10,5,13,0],
+  ['SUNY at Buffalo',25,4,2,16,1,2],['Old Dominion Freight Lines',25,6,16,0,1,2],
+  ['University of Chicago',21,3,3,3,12,0],['Axalta Coating Systems USA LLC',21,2,7,4,6,2],
+  ['Defense Distribution Center Susquehanna',21,19,0,0,1,1],['Univar Solutions Commerce',21,4,6,3,3,5],
+  ['Daubert Chemical Avenue',20,12,5,0,0,3],['MU Resource Recovery Center',20,2,1,7,10,0],
+  ['EnviroServe Inc',19,5,5,4,6,0],['Univar Solutions USA - IN',18,5,2,3,4,4],
+  ['Joint Base Andrews',18,17,0,0,0,1],['Subaru of Indiana Automotive',18,6,10,0,0,2],
+  ['Univar MN St Paul',18,2,10,1,0,5],['Univar Solutions Binghamton',17,7,3,5,1,1]];
+
+function renderProdTable(filter){
+  const tbody=document.getElementById('prod-table');
+  const filtered=filter==='all'?prodData:prodData.map(r=>{
+    const idx={Physical:2,Chemical:3,'Haz Code':4,Profile:5,Weight:6}[filter.split(' ')[0]]||2;
+    return [...r];
+  }).filter(r=>{
+    if(filter==='Physical Analysis')return r[2]>0;if(filter==='Chemical Analysis')return r[3]>0;
+    if(filter==='Haz Code Issue')return r[4]>0;if(filter==='Profile issues')return r[5]>0;
+    if(filter==='Weight Discrepancy')return r[6]>0;return true;
+  }).sort((a,b)=>{
+    if(filter==='Physical Analysis')return b[2]-a[2];if(filter==='Chemical Analysis')return b[3]-a[3];
+    if(filter==='Haz Code Issue')return b[4]-a[4];if(filter==='Profile issues')return b[5]-a[5];
+    if(filter==='Weight Discrepancy')return b[6]-a[6];return b[1]-a[1];
+  });
+  tbody.innerHTML=filtered.map(([n,t,p,ch,h,pr,w])=>
+    `<tr><td>${n}</td><td class="n">${t}</td><td class="n">${p||'-'}</td><td class="n">${ch||'-'}</td><td class="n${h>=10?' hi':''}">${h||'-'}</td><td class="n${pr>=10?' hi':''}">${pr||'-'}</td><td class="n">${w||'-'}</td><td><div class="bar-i"><div class="b" style="width:${t/76*100}%;background:var(--accent)"></div></div></td></tr>`).join('');
+}
+renderProdTable('all');
+document.getElementById('prod-filter').addEventListener('change',e=>renderProdTable(e.target.value));
+
+// WASTE PROFILES (actual profile numbers with process code)
+const wp=[
+  ['1000194662 (ZV1)',38,1.1,'NSA (28)','Physical Analysis'],
+  ['1000037788 (ZP2)',23,39.0,'Univ. Illinois (14)','Haz Code (17)'],
+  ['1000037775 (ZP)',16,26.8,'Univ. Illinois (7)','Haz Code (10)'],
+  ['1000226725 (ZV1)',14,0.6,'Def. Dist. Susq. (9)','Physical'],
+  ['1000037682 (ZI)',12,32.1,'Univ. Illinois (3)','Haz Code (11)'],
+  ['1000194663 (ZV1)',11,0.9,'NSA (5)','Physical'],
+  ['1000193510 (AF1)',9,9.3,'City Nashua HHW (3)','Weight (9)'],
+  ['1000037776 (ZP1)',9,36.0,'Univ. Illinois (6)','Haz Code (8)'],
+  ['1000558440 (XM2)',8,12.1,'Old Dominion (8)','Chemical (8)'],
+  ['1000532649 (RS2)',8,3.4,'Univar Clearfield (7)','Weight (5)'],
+  ['1000037728 (ZIH)',7,19.7,'SUNY Buffalo (3)','Haz Code (6)'],
+  ['1000521560 (PI)',7,13.0,'Old Dominion (7)','Physical (7)'],
+  ['1000309264 (ZV1)',7,0.1,'NSA (7)','Physical (7)'],
+  ['1000198021 (RPF2)',6,12.3,'Axalta (6)','Chemical (4)'],
+  ['1000321688 (ND)',6,4.2,'Daubert Chem. (3)','Physical (4)']
+];
+new Chart(document.getElementById('waste-chart'),{type:'bar',
+  data:{labels:wp.map(w=>w[0]),datasets:[{data:wp.map(w=>w[1]),backgroundColor:wp.map(w=>w[2]>15?'#ef4444':w[2]>8?'#f59e0b':'#4ea8de'),borderRadius:3}]},
+  options:{...cd,indexAxis:'y',scales:{...cd.scales,y:{...yng,ticks:{...yng.ticks,font:{size:9}}}}}});
+document.getElementById('waste-table').innerHTML=wp.map(([id,cnt,avg,prod,iss])=>{
+  const parts=id.split(' ');const prof=parts[0];const proc=parts[1]||'';
+  return `<tr><td style="font-weight:600;font-variant-numeric:tabular-nums">${prof}</td><td>${proc.replace(/[()]/g,'')}</td><td class="n">${cnt}</td><td class="n${avg>15?' hi':''}">${avg}</td><td style="font-size:11px;color:var(--muted)">${prod}</td><td style="font-size:11px;color:var(--muted)">${iss}</td></tr>`;
+}).join('');
+
+// SERVICE CENTERS
+const scs=[['SC East Chicago',876],['SC Chambersburg',261],['SC Pittsburgh',121],['SC Raleigh',114],['SC New Jersey',99],['SC Newington',81],['SC Kansas City',80],['SC Meriden',73],['SC Iowa',51],['SC Cincinnati',42],['Other',28]];
+new Chart(document.getElementById('sc-donut'),{type:'doughnut',
+  data:{labels:scs.map(s=>s[0]),datasets:[{data:scs.map(s=>s[1]),backgroundColor:['#4ea8de','#7c3aed','#14b8a6','#d4537e','#f59e0b','#22c55e','#ef4444','#888780','#4ea8de','#f59e0b','#888780'],borderWidth:0}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:tx,font:{size:9},boxWidth:7,padding:4}}}}});
+document.getElementById('sc-table').innerHTML=scs.map(([n,c])=>
+  `<tr><td>${n}</td><td class="n">${c}</td><td class="n">${Math.round(c/1826*100)}%</td></tr>`).join('');
+
+// RESOLUTION
+const worst=[['Vibrantz Color Solutions','Chemical','NSM Flashed',156,'SC Pittsburgh'],['Vibrantz Color Solutions','Physical','Paint Cans',140,'SC Pittsburgh'],
+  ['SUNY at Buffalo','PCBs',"PCB's",95,'SC Pittsburgh'],['Huntsman Advanced Materials','Physical','Cylinder Inside Drum',94,'SC Pittsburgh'],
+  ['Medline Industries','Weight','Weight Discrepancy',92,'SC East Chicago'],['Wake Forest University','Physical','Powder',91,'SC Raleigh'],
+  ['Kropp Environmental','Chemical','Low pH / State Code',85,'SC Meriden'],['Pilgrim PC','Haz Code','Haz Code Issue',83,'SC New Jersey'],
+  ['SUNY at Buffalo','Haz Code','D003 Not in Profile',80,'SC Pittsburgh'],['SUNY at Buffalo','Haz Code','P087 Not in Profile',80,'SC Pittsburgh']];
+document.getElementById('worst-table').innerHTML=worst.map(([p,t,d,days,sc])=>
+  `<tr><td>${p}</td><td>${t}</td><td>${d}</td><td class="n hi">${days}</td><td>${sc}</td></tr>`).join('');
+
+new Chart(document.getElementById('res-box'),{type:'bar',
+  data:{labels:['Physical','Chemical','Haz Code','Profile','Weight','PCBs'],
+    datasets:[
+      {label:'Mean',data:[8.1,8.5,15.0,9.3,9.2,34.7],backgroundColor:'#ef4444',borderRadius:3},
+      {label:'Median',data:[2.0,3.0,8.0,5.0,6.0,22.0],backgroundColor:'#4ea8de',borderRadius:3}
+    ]},
+  options:{...cd,scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}},
+    plugins:{legend:{display:true,position:'top',labels:{color:tx,font:{size:10},boxWidth:8}}}}});
+
+// FINANCIAL
+const finWorst=[['National Security Agency',52,'$2,711','191.8','~78','$35'],['Joint Base Andrews',18,'$2,249','80.0','~27','$83'],
+  ['Letterkenny Army Depot',16,'$3,469','46.1','~24','$145'],['Univar MN St. Paul',18,'$5,752','31.3','~34','$169'],
+  ['University of Chicago',21,'$7,342','28.6','~52','$140'],['SUNY at Buffalo',25,'$9,111','27.4','~64','$141'],
+  ['University of Illinois',42,'$17,935','23.4','~124','$144'],['Univar Commerce',21,'$11,800','17.8','~51','$231']];
+document.getElementById('fin-worst').innerHTML=finWorst.map(([n,no,r,p,h,dh])=>
+  `<tr><td>${n}</td><td class="n">${no}</td><td class="n">${r}</td><td class="n hi">${p}</td><td class="n">${h}</td><td class="n hi">${dh}</td></tr>`).join('');
+
+const finBest=[['US Industrial Technologies',36,'$90,235','$1,135'],['Axalta Coating USA LLC',21,'$62,428','$1,486'],
+  ['Daubert Chemical',20,'$31,117','$943'],['Heritage Env. Services',16,'$124,296','High'],
+  ['Old Dominion Freight',25,'$26,580','$682'],['GFL Environmental',34,'$43,912','$563']];
+document.getElementById('fin-best').innerHTML=finBest.map(([n,no,r,dh])=>
+  `<tr><td>${n}</td><td class="n">${no}</td><td class="n">${r}</td><td class="n" style="color:var(--green);font-weight:700">${dh}</td></tr>`).join('');
+
+const finSC=[['SC East Chicago',876,'$1,655,898','52.9','8.3','High vol, good rate + speed'],
+  ['SC Pittsburgh',121,'$174,347','69.4','20.5','Slow resolution — investigate'],
+  ['SC Chambersburg',261,'$121,606','214.6','2.4','Highest rate but fast resolution'],
+  ['SC Newington',81,'$68,320','118.6','15.2','High rate + slow resolution'],
+  ['SC Raleigh',114,'$171,617','66.4','15.1','Moderate rate, slow resolution'],
+  ['SC Kansas City',80,'$156,507','51.1','10.2','Balanced'],
+  ['SC Iowa',51,'$106,772','47.8','11.4','Best normalized rate'],
+  ['SC Meriden',73,'$121,967','59.9','11.4','Moderate'],
+  ['SC New Jersey',99,'$106,434','93.0','11.7','High rate']];
+document.getElementById('fin-sc').innerHTML=finSC.map(([n,no,r,p,d,a])=>{
+  const dColor=d>=15?'hi':d>=10?'':'';
+  const pColor=p>=100?'hi':'';
+  return `<tr><td>${n}</td><td class="n">${no}</td><td class="n">${r}</td><td class="n ${pColor}">${p}</td><td class="n ${dColor}">${d}</td><td style="font-size:11px;color:${a.includes('investigate')?'var(--red)':'var(--muted)'}">${a}</td></tr>`;
+}).join('');
+
+// OUTLIERS
+new Chart(document.getElementById('out-sc-haz'),{type:'bar',
+  data:{labels:['SC Pittsburgh','SC Newington','SC Raleigh','SC New Jersey','SC Meriden','SC Kansas City','SC East Chicago','SC Chambersburg'],
+    datasets:[{label:'Avg days (Haz Code)',data:[39.0,24.0,22.0,16.3,13.0,12.2,10.3,1.5],
+      backgroundColor:['#ef4444','#ef4444','#f59e0b','#f59e0b','#f59e0b','#4ea8de','#22c55e','#22c55e'],borderRadius:3}]},
+  options:{...cd,indexAxis:'y',scales:{...cd.scales,y:yng},plugins:{legend:{display:false}}}});
+
+new Chart(document.getElementById('out-seasonal'),{type:'bar',
+  data:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    datasets:[{label:'Avg resolution (days)',data:[10.9,7.3,9.3,8.0,6.4,5.6,10.0,15.3,4.9,12.9,15.2,13.3],
+      backgroundColor:[10.9,7.3,9.3,8.0,6.4,5.6,10.0,15.3,4.9,12.9,15.2,13.3].map(v=>v>=13?'#ef4444':v>=10?'#f59e0b':'#4ea8de'),borderRadius:3}]},
+  options:{...cd,scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}},plugins:{legend:{display:false}}}});
+
+new Chart(document.getElementById('out-axalta'),{type:'bar',
+  data:{labels:['NSA','Univar Clearfield','SUNY Buffalo','US Industrial','EnviroServe','Axalta (combined)'],
+    datasets:[
+      {label:'H1 2025',data:[45,51,14,19,11,15],backgroundColor:'#4ea8de',borderRadius:3},
+      {label:'Q4 25 + Q1 26',data:[5,13,5,8,3,31],backgroundColor:'#ef4444',borderRadius:3}
+    ]},
+  options:{...cd,scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}},
+    plugins:{legend:{display:true,position:'top',labels:{color:tx,font:{size:10},boxWidth:8}}}}});
+
+const dualData=[['GFL Environmental',14,34,48,'$43,912'],['US Industrial Tech',5,36,41,'$90,235'],
+  ['Axalta Coating LLC',2,35,37,'$25,552'],['EnviroServe Inc',13,19,32,'$20,777'],
+  ['Axalta Coating USA LLC',2,21,23,'$62,428'],['University of Chicago',1,21,22,'$7,342'],
+  ['Sun Environmental',8,13,21,'$17,860'],['Subaru Indiana',2,18,20,'$14,818']];
+document.getElementById('out-dual').innerHTML=dualData.map(([n,pw,mat,tot,rev])=>
+  `<tr><td>${n}</td><td class="n">${pw}</td><td class="n">${mat}</td><td class="n" style="font-weight:700">${tot}</td><td class="n">${rev}</td></tr>`).join('');
+
+// CER vs LABPACK
+const clMLabels=['Jan 25','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan 26','Feb','Mar','Apr'];
+const clMCer=[10.3,7.9,6.9,5.7,3.8,4.6,5.5,9.9,2.8,7.5,8.4,10.5,9.0,6.0,6.2,1.6];
+const clMLp=[19.6,13.3,26.4,26.0,16.9,12.0,20.2,38.6,18.1,33.3,36.8,25.1,15.2,5.2,11.8,7.5];
+const clQLabels=['Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26*'];
+const clQCer=[8.5,4.8,6.0,8.8,7.0,1.6];
+const clQLp=[21.0,19.6,24.8,31.9,11.0,7.5];
+
+let clChart;
+function buildCL(mode){
+  const isM=mode==='monthly';
+  if(clChart)clChart.destroy();
+  clChart=new Chart(document.getElementById('cl-trend'),{type:'line',
+    data:{labels:isM?clMLabels:clQLabels,datasets:[
+      {label:'CER (Drums)',data:isM?clMCer:clQCer,borderColor:'#4ea8de',backgroundColor:'rgba(78,168,222,.08)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#4ea8de'},
+      {label:'LabPack',data:isM?clMLp:clQLp,borderColor:'#7c3aed',backgroundColor:'rgba(124,58,237,.08)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#7c3aed'}
+    ]},
+    options:{...cd,scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}},
+      y:{...cd.scales.y,title:{display:true,text:'Avg days to resolution',color:tx,font:{size:10}}}},
+      plugins:{legend:{display:true,position:'top',labels:{color:tx,font:{size:11},boxWidth:10,padding:16}}}}});
+}
+buildCL('monthly');
+document.getElementById('cl-toggle').addEventListener('click',e=>{
+  if(!e.target.dataset.mode)return;
+  document.querySelectorAll('#cl-toggle button').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');buildCL(e.target.dataset.mode);
+});
+
+new Chart(document.getElementById('cl-cer-dist'),{type:'bar',
+  data:{labels:['0–3d','4–7d','8–14d','15–30d','31+d'],
+    datasets:[{data:[758,308,216,121,54],backgroundColor:['#22c55e','#4ea8de','#f59e0b','#ef4444','#ef4444'],borderRadius:3}]},
+  options:{...cd,plugins:{legend:{display:false}},scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}}}});
+
+new Chart(document.getElementById('cl-lp-dist'),{type:'bar',
+  data:{labels:['0–3d','4–7d','8–14d','15–30d','31+d'],
+    datasets:[{data:[79,36,41,83,96],backgroundColor:['#22c55e','#4ea8de','#f59e0b','#ef4444','#ef4444'],borderRadius:3}]},
+  options:{...cd,plugins:{legend:{display:false}},scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}}}}});
+
+const clCoding=[['Physical Analysis',489,6.1,58,24.7],['Chemical Analysis',449,7.2,65,19.1],
+  ['Haz Code Issue',166,7.3,115,26.4],['Profile Issues',209,6.6,54,18.9],
+  ['Weight Discrepancy',138,6.7,37,18.6],['PCBs',4,18.0,3,57.0]];
+document.getElementById('cl-coding-table').innerHTML=clCoding.map(([t,cn,ca,ln,la])=>{
+  const ratio=(la/ca).toFixed(1);
+  return `<tr><td>${t}</td><td class="n" style="border-left:2px solid rgba(78,168,222,.3)">${cn}</td><td class="n">${ca}</td><td class="n" style="border-left:2px solid rgba(124,58,237,.3)">${ln}</td><td class="n hi">${la}</td><td class="n" style="color:var(--amber);font-weight:700">${ratio}×</td></tr>`;
+}).join('');
+
+const clQtr=[['Q1 2025',279,8.5,53,21.0],['Q2 2025',363,4.8,76,19.6],['Q3 2025',302,6.0,89,24.8],
+  ['Q4 2025',270,8.8,74,31.9],['Q1 2026',205,7.0,41,11.0]];
+document.getElementById('cl-qtr-table').innerHTML=clQtr.map(([q,cn,ca,ln,la])=>
+  `<tr><td>${q}</td><td class="n" style="border-left:2px solid rgba(78,168,222,.3)">${cn}</td><td class="n">${ca}</td><td class="n" style="border-left:2px solid rgba(124,58,237,.3)">${ln}</td><td class="n${la>20?' hi':''}">${la}</td></tr>`).join('');
+
+// METALS - expanded
+new Chart(document.getElementById('metals-dist'),{type:'bar',
+  data:{labels:['0–3 days','4–7 days','8–14 days','15–30 days','31+ days'],
+    datasets:[{data:[119,251,251,32,4],backgroundColor:['#22c55e','#4ea8de','#f59e0b','#ef4444','#ef4444'],borderRadius:3}]},
+  options:{...cd,scales:{...cd.scales,x:{...cd.scales.x,grid:{display:false}},
+    y:{...cd.scales.y,title:{display:true,text:'Notifications',color:tx,font:{size:10}}}}}});
+
+new Chart(document.getElementById('metals-qtr'),{type:'bar',
+  data:{labels:['Q1 25','Q2 25','Q3 25','Q4 25','Q1 26','Q2 26*'],
+    datasets:[
+      {label:'Volume',data:[130,137,153,137,105,9],backgroundColor:'#d4537e',borderRadius:3,yAxisID:'y'},
+      {label:'Avg days',data:[7.3,8.1,10.0,5.4,7.0,4.9],type:'line',borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.2)',pointBackgroundColor:'#f59e0b',pointRadius:5,tension:.3,yAxisID:'y1'}
+    ]},
+  options:{...cd,scales:{
+    x:{...cd.scales.x,grid:{display:false}},
+    y:{...cd.scales.y,position:'left',title:{display:true,text:'Volume',color:tx,font:{size:10}}},
+    y1:{position:'right',grid:{display:false},ticks:{color:'#f59e0b',font:{size:10}},title:{display:true,text:'Avg days',color:'#f59e0b',font:{size:10}}}
+  },plugins:{legend:{display:true,position:'top',labels:{color:tx,font:{size:10},boxWidth:8}}}}});
+
+const mqtr=[['Q1 2025',130,'7.3','7.0',3,'2.3%'],['Q2 2025',137,'8.1','8.0',8,'5.8%'],
+  ['Q3 2025',153,'10.0','9.0',20,'13.1%'],['Q4 2025',137,'5.4','5.0',3,'2.2%'],['Q1 2026',105,'7.0','7.0',2,'1.9%']];
+document.getElementById('metals-qtr-table').innerHTML=mqtr.map(([q,v,m,med,over,pct])=>
+  `<tr><td>${q}</td><td class="n">${v}</td><td class="n">${m}</td><td class="n">${med}</td><td class="n${over>10?' hi':''}">${over}</td><td class="n${pct.startsWith('13')?' hi':''}">${pct}</td></tr>`).join('');
+
+const msc=[['SC East Chicago',216],['SC Chambersburg',205],['SC Meriden',71],['SC New Jersey',38],['SC Kansas City',28],['SC Raleigh',24],['SC Atlanta',24],['SC Newington',23]];
+document.getElementById('metals-sc-table').innerHTML=msc.map(([n,c])=>
+  `<tr><td>${n}</td><td class="n">${c}</td></tr>`).join('');
+
+const mprod=[['Letterkenny Army Depot',60],['Tobyhanna Army Depot',47],['Ethicon Inc',24],['MU Resource Recovery Center',21],
+  ['NAVFAC-NAS Pax River',20],['Windsor Airmotive',18],['GFL Environmental Services USA',17],['Univar Clearfield',14],['South Atlantic Galvanizing',14],['EMSL Analytical',13]];
+document.getElementById('metals-prod-table').innerHTML=mprod.map(([n,c])=>
+  `<tr><td>${n}</td><td class="n">${c}</td></tr>`).join('');
+
+const mwp=[['1000393101 (NM2)',23],['1000053539 (LA1)',23],['1000197871 (LM1)',19],['1000146777 (NM2)',15],
+  ['1000127644 (STA)',14],['1000139926 (NM2)',11],['1000393104 (NM2)',9],['1000087408 (LM3)',9],['1000060610 (NTA)',9],['1000298283 (NM2)',8]];
+document.getElementById('metals-wp-table').innerHTML=mwp.map(([n,c])=>
+  `<tr><td style="font-variant-numeric:tabular-nums">${n}</td><td class="n">${c}</td></tr>`).join('');
+
+// UOM TABLE
+const uomData=[['XPO Logistics (BCA)',10],['XPO Logistics (XNW)',8],['Axalta Coating Systems LLC',6],['XPO Logistics (XLF)',5],
+  ['MU Resource Recovery Center',3],['XPO Logistics (XPB)',3],['Siemens Energy',3],['Sherwin-Williams (Richmond)',2],
+  ['University of Chicago',2],['Smurfit WestRock Solvay',2]];
+document.getElementById('uom-table').innerHTML=uomData.map(([n,c])=>
+  `<tr><td>${n}</td><td class="n">${c}</td><td><div class="bar-i"><div class="b" style="width:${c/10*100}%;background:var(--amber)"></div></div></td></tr>`).join('');
+
+// PIECE COUNT TABLE
+const pcData=[['Advanced Environmental Services',15],['Daubert Chemical Avenue',14],['Sherwin-Williams (Greensboro)',12],
+  ['US Industrial Technologies',10],['Sherwin-Williams (Cincinnati)',8],['University of Chicago',8],['Accurate Dispersions',8],
+  ['Vibrantz Color Solutions',8],['Nippon Paint Automotive Americas',6],['GFL Environmental Services USA',6]];
+document.getElementById('piece-table').innerHTML=pcData.map(([n,c])=>
+  `<tr><td>${n}</td><td class="n">${c}</td><td><div class="bar-i"><div class="b" style="width:${c/15*100}%;background:var(--muted)"></div></div></td></tr>`).join('');
+</script>
+<button class="print-all-btn" onclick="window.print()">
+  <svg viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+  Print All Sections
+</button>
+</body>
+</html>
