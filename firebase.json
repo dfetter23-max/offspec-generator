@@ -41,10 +41,20 @@
     "rewrites": [
       {
         "source": "**",
-        "destination": "/index.html"
+        "destination": "/dashboard.html"
       }
     ],
     "redirects": [
+      {
+        "source": "/",
+        "destination": "/dashboard.html",
+        "type": 302
+      },
+      {
+        "source": "/index.html",
+        "destination": "/dashboard.html",
+        "type": 302
+      },
       {
         "source": "/Offspec-Generator.v67.html",
         "destination": "/Offspec-Generator.html",
