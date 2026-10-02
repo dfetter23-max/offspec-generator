@@ -6,3 +6,6 @@ _backups/
 firebase-debug.log
 .DS_Store
 Thumbs.db
+
+# Private chat/context exports - never commit
+COWORK_CONTEXT.md
