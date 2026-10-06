@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Combined Off-Spec Generator v7.0</title>
+<title>Combined Off-Spec Generator v7.1</title>
 <style>
   :root{
     --accent:#26b0b0; --accent-d:#1f9595; --ink:#e8edf1; --mut:#9aa7b3;
@@ -279,7 +279,7 @@
 <body>
 <header class="app">
   <label class="modepick" title="Switch generator mode"><span>Tool</span><select id="toolMode"><option value="gen" selected>Gen-Data Off-Spec</option><option value="q">Q Offspec Generator</option></select></label>
-  <span class="badge">v7.0</span>
+  <span class="badge">v7.1</span>
   <a class="homelink" href="https://ec-receiving.web.app/dashboard.html" title="Receiving Tools home">&#8592; Receiving Tools</a>
   <div class="ocrbar ocr-indicator" id="ocrBar" role="status" aria-live="polite" title="PaddleOCR status">
     <span class="ocrcam">&#128247;</span>
@@ -2886,6 +2886,16 @@ body.qmode .phrase-panel{display:flex;flex-direction:column}
   // the first line and the phrase's own text follows on the line below it.
   const TWO_LINE_LEADINS={'WEIGHT DISCREPANCY':'10% OR GREATER DISCREPANCY BETWEEN MANIFESTED AND RECEIVED WEIGHT'};
   const MISC_LINE_COUNT=3;
+  // 7.1: these phrases also need a D001 note on the next empty miscellaneous line below.
+  const D001_KEYWORDS=['FLASH','POS OXIDATION'];
+  const D001_NOTE='D001 NEEDS ADDED TO MANIFEST.';
+  function addD001Below(slot){
+    if(qFill.misc.some(t=>String(t||'').trim().toUpperCase()===D001_NOTE))return; // already there
+    for(let j=slot+1;j<MISC_LINE_COUNT;j++){
+      if(!String(qFill.misc[j]||'').trim()){ qFill.misc[j]=D001_NOTE; window.qPhraseMeta[j]=null; return; }
+    }
+    alert('No empty miscellaneous line below for "'+D001_NOTE+'" Add it by hand.');
+  }
   function writeMiscLine(slot,p,text){
     qFill.misc[slot]=String(text||'').trim();
     window.qPhraseUseCounter=(window.qPhraseUseCounter||0)+1;
@@ -2913,6 +2923,7 @@ body.qmode .phrase-panel{display:flex;flex-direction:column}
       return;
     }
     writeMiscLine(activeMisc,p,String(p.phrase||'').trim());
+    if(D001_KEYWORDS.includes(String(p.keyword||'').trim().toUpperCase()))addD001Below(activeMisc);
     renderPreview();
     refreshNotif();
     setActive(activeMisc);

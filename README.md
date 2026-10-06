@@ -34,6 +34,8 @@ To update it, copy the new `javascript:` link into the install page's drag butto
 
 ## Version history
 
+- **7.1** (2026-10-06): In Q Offspec mode, using the FLASH or POS OXIDATION phrase also puts
+  "D001 NEEDS ADDED TO MANIFEST." on the next empty miscellaneous line below it (once only).
 - **7.0** (2026-10-06): The date picker has ‹ › arrows to page back (and forward, up to this month)
   through months, in both Gen-Data and Q Offspec modes. PageUp/PageDown do the same. Reopening
   the picker on an older date opens on that date's month.
