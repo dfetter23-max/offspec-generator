@@ -34,6 +34,9 @@ To update it, copy the new `javascript:` link into the install page's drag butto
 
 ## Version history
 
+- **7.0** (2026-10-06): The date picker has ‹ › arrows to page back (and forward, up to this month)
+  through months, in both Gen-Data and Q Offspec modes. PageUp/PageDown do the same. Reopening
+  the picker on an older date opens on that date's month.
 - **6.9** (2026-10-02): The paste box is half the height, and the gap after the Gen-Data preview
   is gone. The same paste box (ZSD64 text or screenshot) now also sits in Q Offspec mode, under
   Generate / Clear.
