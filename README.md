@@ -9,7 +9,8 @@ Everything under `public/` is the live site. This repository is the working copy
 3. Test the preview with real screenshots and data.
 4. Merge the pull request into `main`, and GitHub deploys it to the **live** site.
 
-`deploy.bat` still works from the home PC as a manual fallback.
+`deploy.bat` still works from the home PC as a manual fallback. It pulls the latest from GitHub
+first and refuses to deploy if that fails, so an out-of-date home copy can't overwrite newer changes.
 
 ## Offspec Generator
 
