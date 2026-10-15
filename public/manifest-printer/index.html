@@ -25,7 +25,7 @@
     .optionbar{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}.preview-label{display:flex;flex-direction:column;gap:2px;margin-right:auto}.preview-label strong{font-size:15px;color:#8b2f18}.preview-label span{font-size:11px;color:#607080}.optionbar label{display:flex;gap:7px;align-items:center;font-size:13px}.optionbar input{width:auto;margin:0}.style-grid{padding:12px 14px;display:grid;grid-template-columns:1.35fr repeat(3,1fr);gap:8px;align-items:center}.style-grid b{font-size:12px}.style-grid select{margin:0;padding:7px 5px}
     .sheet-wrap{width:min(100%,950px)}.sheet{position:relative;width:100%;aspect-ratio:684/792;background:#fff;box-shadow:0 5px 25px #1b2b3c42;container-type:inline-size}.sheet img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.sheet.no-bg img{visibility:hidden}
     .printed{position:absolute;color:#050505;font-family:"Courier New",monospace;font-weight:700;white-space:pre-wrap;overflow:hidden;line-height:1.06;pointer-events:none;font-size:11px}.p-center{text-align:center}.p-small{font-size:9.7px}.p-check{font-family:Arial,sans-serif;font-size:10px;font-weight:900;text-align:center;line-height:1}
-    main.blank-direct .entry .card:not(.style-details){display:none}main.blank-direct .entry .save-note{margin:12px 0;padding:12px;background:#eaf5fb;border-radius:8px;color:#17344d}main.blank-direct .preview-label strong{color:#1769aa}
+    main.blank-direct .entry .card:not(.style-details){display:none}main.blank-direct.letter-view .entry #letterEditor .card{display:block}main.blank-direct .entry .save-note{margin:12px 0;padding:12px;background:#eaf5fb;border-radius:8px;color:#17344d}main.blank-direct .preview-label strong{color:#1769aa}
     .blank-hit{display:none;position:absolute;z-index:4;border:1px solid transparent;background:transparent;padding:0;cursor:text;border-radius:2px}main.blank-direct .blank-hit{display:block}.blank-hit:hover,.blank-hit:focus-visible{background:#1a77b51c;border-color:#1684c5;outline:none}.blank-hit.check-hit{cursor:pointer}.blank-hit.check-hit:hover{background:#1a77b540}.blank-editor{position:absolute;z-index:6;margin:0!important;min-height:0!important;max-height:none!important;border:2px solid #0870aa;border-radius:2px;background:#fffef2;color:#111;padding:2px;font:700 11px/1.08 "Courier New",monospace;resize:none;outline:none;box-shadow:0 0 0 3px #fff9;overflow:auto}
     .blank-default{display:none;position:absolute;z-index:7;width:2.3%;height:1.9%;min-width:17px;min-height:17px;cursor:pointer}main.blank-direct .blank-default{display:block}.blank-default input{width:100%;height:100%;margin:0;padding:0;accent-color:#19734b;cursor:pointer}.blank-default-five{left:7%;top:10.4%}.blank-default-eight{left:7%;top:22.4%}
     .empty-note{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#63798b;font-size:24px}.sheet.no-bg .empty-note{display:flex}.sheet.no-bg .printed:not(:empty)~.empty-note{display:none}
@@ -191,7 +191,7 @@
       <div class="card"><h2>Letter identification</h2><div class="fields">
         <label>Letter date<input type="date" data-letter-field="letterDate"></label>
         <label>Manifest number<input class="synced-field" data-letter-field="letterManifest" readonly></label>
-        <p class="sync-note">Copied directly from Section 18a — Moved from Manifest #.</p>
+        <p class="sync-note" id="letterManifestNote">Copied directly from Section 18a — Moved from Manifest #.</p>
         <label class="wide">Date Received/Found<input type="date" data-letter-field="letterFoundDate"></label>
         <div class="letter-summary" id="letterCopiedSummary"></div>
       </div></div>
@@ -337,15 +337,21 @@ Chicago, IL 60604</div>
   function loadLetterDraft(){let saved={};try{saved=JSON.parse(localStorage.getItem('manifest-printer-letter-draft-v2')||'{}')}catch(e){}letterInputs.forEach(el=>{const name=el.dataset.letterField;if(saved[name]!=null)el.value=saved[name];else if(letterDefaults[name]!=null)el.value=letterDefaults[name]});if(saved.letterWasteClass){const el=document.querySelector(`[name="letterWasteClass"][value="${saved.letterWasteClass}"]`);if(el)el.checked=true}if(saved.letterDisposition){const el=document.querySelector(`[name="letterDisposition"][value="${saved.letterDisposition}"]`);if(el)el.checked=true}const date=document.querySelector('[data-letter-field="letterDate"]');if(!date.value)date.value=todayISO()}
   function syncLetter(values){
     const hasWasteCode=Array.from({length:4},(_,i)=>Array.from({length:6},(_,n)=>values[`w${i+1}code${n+1}`]).some(Boolean)).some(Boolean);
-    document.getElementById('letterLaunch').hidden=!isNonHaz()||!hasWasteCode;
+    const blankMode=isBlank(),refMatch=(values.manifestReference||'').match(/M#\s*([A-Za-z0-9-]+)/i);
+    // NON-HAZ: from "Moved from Manifest #". Blank: an M# typed in Section 18a, or typed on the letter.
+    const sourceManifest=isNonHaz()?(values.movedFromManifest||''):blankMode&&refMatch?refMatch[1]:'';
+    document.getElementById('letterLaunch').hidden=!(blankMode||(isNonHaz()&&hasWasteCode));
     const previousSourceManifest=localStorage.getItem('manifest-printer-letter-source-manifest')||'';
-    if(values.movedFromManifest&&values.movedFromManifest!==previousSourceManifest){['letterTypeQuantity','letterManagementCode'].forEach(name=>{const el=document.querySelector(`[data-letter-field="${name}"]`);el.value='';el.dataset.autoValue=''});localStorage.setItem('manifest-printer-letter-source-manifest',values.movedFromManifest)}
-    document.querySelector('[data-letter-field="letterManifest"]').value=values.movedFromManifest||'';
+    if(sourceManifest&&sourceManifest!==previousSourceManifest){['letterTypeQuantity','letterManagementCode'].forEach(name=>{const el=document.querySelector(`[data-letter-field="${name}"]`);el.value='';el.dataset.autoValue=''});localStorage.setItem('manifest-printer-letter-source-manifest',sourceManifest)}
+    const letterManifest=document.querySelector('[data-letter-field="letterManifest"]');
+    letterManifest.readOnly=!blankMode;letterManifest.classList.toggle('synced-field',!blankMode);
+    if(blankMode)updateAutoLetter('letterManifest',sourceManifest);else letterManifest.value=sourceManifest;
+    document.getElementById('letterManifestNote').textContent=blankMode?'Type the manifest number here, or put M# and the number in Section 18a and it fills in automatically.':'Copied directly from Section 18a — Moved from Manifest #.';
     updateAutoLetter('letterManagementCode',values.hCode1||'');
     updateAutoLetter('letterTypeQuantity',wasteLetterSummary(values));
     const facility=slashAddress(values.facilityAddress),generator=firstLine(values.generatorAddress),transporter=[values.transporter1,values.transporter1Id].filter(Boolean).join(' / ');
     const summary=document.getElementById('letterCopiedSummary');summary.replaceChildren();const heading=document.createElement('b');heading.textContent='Copied from manifest';summary.append(heading,document.createElement('br'),document.createTextNode(`Facility: ${facility||'—'}`),document.createElement('br'),document.createTextNode(`Generator: ${generator||'—'}`),document.createElement('br'),document.createTextNode(`Transporter 1: ${transporter||'—'}`));
-    setLetterOutput('letterFacility',facility);setLetterOutput('letterFacilityId',values.facilityId);setLetterOutput('letterGenerator',generator);setLetterOutput('letterGeneratorId',values.generatorId);setLetterOutput('letterTransporter1',transporter);setLetterOutput('letterOriginalManifest',values.movedFromManifest||'');
+    setLetterOutput('letterFacility',facility);setLetterOutput('letterFacilityId',values.facilityId);setLetterOutput('letterGenerator',generator);setLetterOutput('letterGeneratorId',values.generatorId);setLetterOutput('letterTransporter1',transporter);
     renderLetter();
   }
   function renderLetter(){
@@ -355,6 +361,7 @@ Chicago, IL 60604</div>
     const disposition=dispositionText[choiceValue('letterDisposition')]||'';
     const managementStatement=values.letterManagementCode?`EPA management code ${values.letterManagementCode}.`:'EPA management code has not been entered.';
     setLetterOutput('letterWasteClass',wasteClass);
+    setLetterOutput('letterOriginalManifest',values.letterManifest);
     setLetterOutput('letterDisposition',disposition);
     setLetterOutput('letterManagementStatement',managementStatement);
     document.querySelector('[data-letter-field="letterFoundDate"]').classList.toggle('letter-required',!values.letterFoundDate);
@@ -654,7 +661,7 @@ Chicago, IL 60604</div>
   }
   function downloadWordLetter(){
     renderLetter();const d=letterData(),missing=[];
-    if(!d.letterManifest)missing.push('Moved from Manifest # in Section 18a');
+    if(!d.letterManifest)missing.push(isBlank()?'Manifest number':'Moved from Manifest # in Section 18a');
     if(!d.letterFoundDate)missing.push('Date Received/Found');
     if(!d.letterTypeQuantity)missing.push('Type and Quantity');
     if(!d.letterManagementCode)missing.push('EPA management code');
