@@ -115,11 +115,8 @@
     </div></div>
     <div class="card" data-preview-y="34"><h2>Waste lines</h2><div class="fields wide" id="wasteInputs"></div></div>
     <div class="card" data-preview-y="54"><h2>Additional information and certification</h2><div class="fields">
-      <div class="special-builder wide standard-special"><h3>14. Special handling — profiles</h3><p class="hint">A Profile # field appears for each populated waste line.</p>
-        <div class="profile-row" data-profile-row="1"><span>Waste line 1</span><label>Profile #<input data-field="profile1"></label></div>
-        <div class="profile-row" data-profile-row="2"><span>Waste line 2</span><label>Profile #<input data-field="profile2"></label></div>
-        <div class="profile-row" data-profile-row="3"><span>Waste line 3</span><label>Profile #<input data-field="profile3"></label></div>
-        <div class="profile-row" data-profile-row="4"><span>Waste line 4</span><label>Profile #<input data-field="profile4"></label></div>
+      <div class="special-builder wide standard-special"><h3>14. Special handling</h3><p class="hint" style="margin-bottom:8px">Up to 3 lines. Prints on the left side of Section 14.</p>
+        <label class="wide">Special handling — left<textarea class="three-line" rows="3" data-field="standardSpecialLeft"></textarea></label>
         <input type="hidden" data-field="specialLeft">
       </div>
       <div class="special-builder wide blank-only" hidden><h3>14. Special handling</h3><div class="fields" style="padding:0">
@@ -374,17 +371,11 @@ Chicago, IL 60604</div>
     if(allCapsOn())inputs.filter(isManifestTextField).forEach(el=>el.value=el.value.toUpperCase());
     const nonHaz=isNonHaz(),blank=isBlank(),rejectionMode=isRejection();
     document.querySelector('[data-field="formType"]').value=nonHaz?'nonhaz':blank?'blank':'rejection';
-    const profileLines=[];
     for(let i=1;i<=4;i++){
       const hasCode=Array.from({length:6},(_,n)=>document.querySelector(`[data-field="w${i}code${n+1}"]`).value.trim()).some(Boolean);
       if(hasCode)document.querySelector(`[data-field="w${i}hm"]`).checked=true;
-      const wasteNames=['desc','number','type','quantity','unit',...Array.from({length:6},(_,n)=>`code${n+1}`)];
-      const hasWasteData=wasteNames.some(name=>document.querySelector(`[data-field="w${i}${name}"]`).value.trim());
-      document.querySelector(`[data-profile-row="${i}"]`).classList.toggle('active',hasWasteData);
-      const profile=document.querySelector(`[data-field="profile${i}"]`).value.trim();
-      if(hasWasteData&&profile)profileLines.push(`${i}.) ${profile}`);
     }
-    document.querySelector('[data-field="specialLeft"]').value=blank?document.querySelector('[data-field="blankSpecialLeft"]').value:profileLines.join('\n');
+    document.querySelector('[data-field="specialLeft"]').value=blank?document.querySelector('[data-field="blankSpecialLeft"]').value:document.querySelector('[data-field="standardSpecialLeft"]').value;
     const full=rejectionMode&&document.querySelector('[data-field="rejectionFull"]').checked;
     const partial=rejectionMode&&document.querySelector('[data-field="rejectionPartial"]').checked;
     const manifest=document.querySelector('[data-field="rejectionManifest"]').value.trim();
@@ -468,7 +459,7 @@ Chicago, IL 60604</div>
   function fitAll(){document.querySelectorAll('.printed').forEach(fitText)}
   let flashTimer;function flash(t){const n=document.getElementById('saveNote');n.textContent=t;clearTimeout(flashTimer);flashTimer=setTimeout(()=>n.textContent='Changes save automatically in this browser. Save Print Job when ready, then connect to Manifest Printer Wi-Fi and load the file at http://192.168.4.1.',1200)}
   inputs.forEach(el=>el.addEventListener('input',()=>{if(allCapsOn()&&isManifestTextField(el))el.value=el.value.toUpperCase();if(el.dataset.field==='allCaps'&&el.checked)inputs.filter(isManifestTextField).forEach(field=>field.value=field.value.toUpperCase());render()}));
-  ['blankSpecialLeft','blankSpecialRight'].forEach(name=>document.querySelector(`[data-field="${name}"]`).addEventListener('input',event=>{event.target.value=event.target.value.replace(/\r/g,'').split('\n').slice(0,3).join('\n');render()}));
+  ['blankSpecialLeft','blankSpecialRight','standardSpecialLeft'].forEach(name=>document.querySelector(`[data-field="${name}"]`).addEventListener('input',event=>{event.target.value=event.target.value.replace(/\r/g,'').split('\n').slice(0,3).join('\n');render()}));
   const rejectionFull=document.querySelector('[data-field="rejectionFull"]'),rejectionPartial=document.querySelector('[data-field="rejectionPartial"]');
   rejectionFull.addEventListener('change',()=>{if(rejectionFull.checked)rejectionPartial.checked=false;render()});
   rejectionPartial.addEventListener('change',()=>{if(rejectionPartial.checked)rejectionFull.checked=false;render()});
