@@ -702,7 +702,10 @@ Chicago, IL 60604</div>
   // Portable, versioned browser-to-printer job. Only raw form fields are saved;
   // the calibrated ESP32 rendering and print transformation stay authoritative.
   const jobFormat='manifest-printer-job', jobVersion=1;
-  function jobFields(){render();const optional=new Set(['blankOfferorSignature','blankT1Signature','blankT2Signature','section20Name']);return Object.fromEntries(inputs.map(el=>[el.dataset.field,fieldValue(el)]).filter(([name,value])=>!optional.has(name)||value))}
+  function jobFields(){render();const optional=new Set(['blankOfferorSignature','blankT1Signature','blankT2Signature','section20Name']);
+    // standardSpecialLeft is never saved: its text already travels as specialLeft, which the printer's own page understands.
+    const editorOnly=new Set(['standardSpecialLeft']);
+    return Object.fromEntries(inputs.map(el=>[el.dataset.field,fieldValue(el)]).filter(([name,value])=>!editorOnly.has(name)&&(!optional.has(name)||value)))}
   function savePrintJob(){
     const job={format:jobFormat,version:jobVersion,formType:formSelect.value,createdAt:new Date().toISOString(),fields:jobFields()};
     const blob=new Blob([JSON.stringify(job,null,2)],{type:'application/json'});
@@ -720,8 +723,11 @@ Chicago, IL 60604</div>
       const job=JSON.parse(await file.text());
       if(job.format!==jobFormat||job.version!==jobVersion||!['rejection','nonhaz','blank'].includes(job.formType)||!job.fields||typeof job.fields!=='object'||Array.isArray(job.fields))throw Error('Invalid job format');
       for(const [name,value] of Object.entries(job.fields)){
-        if(!inputs.some(el=>el.dataset.field===name)||typeof value!=='string'||value.length>5000)throw Error('Invalid field: '+name);
+        if(typeof value!=='string'||value.length>5000)throw Error('Invalid field: '+name);
+        // Fields from older or newer versions of this page (e.g. profile1-4) are skipped, not rejected.
+        if(!inputs.some(el=>el.dataset.field===name))delete job.fields[name];
       }
+      if(job.formType!=='blank'&&job.fields.specialLeft!=null&&job.fields.standardSpecialLeft==null)job.fields.standardSpecialLeft=job.fields.specialLeft;
       if(job.fields.formType&&job.fields.formType!==job.formType)throw Error('Form type does not match');
       formSelect.value=job.formType;switchForm(true);resetFields();
       for(const el of inputs){
