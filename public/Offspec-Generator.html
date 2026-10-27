@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Combined Off-Spec Generator v7.1</title>
+<title>Combined Off-Spec Generator v7.2</title>
 <style>
   :root{
     --accent:#26b0b0; --accent-d:#1f9595; --ink:#e8edf1; --mut:#9aa7b3;
@@ -279,7 +279,7 @@
 <body>
 <header class="app">
   <label class="modepick" title="Switch generator mode"><span>Tool</span><select id="toolMode"><option value="gen" selected>Gen-Data Off-Spec</option><option value="q">Q Offspec Generator</option></select></label>
-  <span class="badge">v7.1</span>
+  <span class="badge">v7.2</span>
   <a class="homelink" href="https://ec-receiving.web.app/dashboard.html" title="Receiving Tools home">&#8592; Receiving Tools</a>
   <div class="ocrbar ocr-indicator" id="ocrBar" role="status" aria-live="polite" title="PaddleOCR status">
     <span class="ocrcam">&#128247;</span>
@@ -3221,6 +3221,17 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
 .qguide-alert .qa-d001-note{font-weight:900;color:#ffd29b;font-size:14px}
 .qguide-alert .qa-checklist li::first-letter{text-transform:uppercase}
 .qguide-alert .qa-photo-yes{font-weight:900;color:#ffe7ad;font-size:14px}
+/* 7.2: bigger, easier-to-read Notification Attachments panel; D001/Photos notes in regular weight. */
+.qguide-head h3{font-size:16px;letter-spacing:.3px;white-space:nowrap}
+.qguide-head{flex-wrap:wrap;row-gap:6px}
+.qguide-head .qguide-count{font-size:13px}
+.qguide-alert .qa-title{font-size:15px}
+.qguide-alert .qa-checklist{font-size:17px}
+.qguide-alert .qa-checklist li{padding:4px 0 4px 4px}
+.qguide-alert .qa-text,.qguide-alert .qa-note{font-size:16px}
+.qguide-alert .qa-section{font-size:14px}
+.qguide-empty{font-size:15px}
+.qguide-alert .qa-d001-note,.qguide-alert .qa-photo-yes{font-weight:400;font-size:17px;line-height:1.4}
 @media(max-width:1250px){body.qmode #notifScreen .preview-wrap{grid-template-columns:1fr}body.qmode #notifScreen .preview-wrap #sapwin,body.qmode #notifScreen .preview-wrap #qPacketGuide{grid-column:1;grid-row:auto;position:static}}
 </style>
 
@@ -3447,7 +3458,7 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
       }
       if((m=line.match(/^(?:include|attach)\s*:\s*(.+)$/i))){
         const items=splitPacketItems(m[1]);
-        html+='<div class="qa-section">Packet order</div><ol class="qa-checklist">'+items.map(i=>'<li>'+esc2(i)+'</li>').join('')+'</ol>'; return;
+        html+='<div class="qa-section">Attachment Order</div><ol class="qa-checklist">'+items.map(i=>'<li>'+esc2(i)+'</li>').join('')+'</ol>'; return;
       }
       if(/^(?:critical\s*:|do not\b|never\b|no offspec\b|offspec and photos\b)/i.test(line)){
         html+='<div class="qa-warning">'+esc2(line.replace(/^critical\s*:\s*/i,''))+'</div>'; return;
@@ -3466,7 +3477,7 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     const preview=document.querySelector('#notifScreen .preview-wrap');
     if(!preview||document.getElementById('qPacketGuide'))return;
     const div=document.createElement('div');div.id='qPacketGuide';div.className='qguide';
-    div.innerHTML='<div class="qguide-head"><h3>Q-Packet Guide</h3><span class="qguide-count" id="qGuideCount"></span><button type="button" id="qGuideManage">⚙ Manage</button></div><div id="qGuideAlerts"></div>';
+    div.innerHTML='<div class="qguide-head"><h3>Notification Attachments</h3><span class="qguide-count" id="qGuideCount"></span><button type="button" id="qGuideManage">⚙ Manage</button></div><div id="qGuideAlerts"></div>';
     const hint=preview.querySelector(':scope > .hint');if(hint)preview.insertBefore(div,hint);else preview.appendChild(div);document.getElementById('qGuideManage').onclick=openEditor;
   }
   function sourceText(){
@@ -3489,6 +3500,12 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
       return [];
     }
     return splitPacketItems(m[1]).map(capitalizeItem).filter(Boolean);
+  }
+  // 7.2: weight sheets go in as copies, like analyticals. "Original ..." weight sheets stay as written.
+  function withCopiesNote(item){
+    const t=String(item||'').trim();
+    if(/weight sheets?$/i.test(t)&&!/^original\b/i.test(t))return t+' (only copies)';
+    return t;
   }
   function findGuideData(){
     const text=sourceText(), code=activeCode();
@@ -3521,9 +3538,9 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     const data=findGuideData(),box=document.getElementById('qGuideAlerts'),count=document.getElementById('qGuideCount');
     let html='';
     if(data.packet.length){
-      html+='<div class="qguide-alert packet"><div class="qa-title">Packet order</div><ol class="qa-checklist">'+data.packet.map(x=>'<li>'+esc2(x)+'</li>').join('')+'</ol></div>';
+      html+='<div class="qguide-alert packet"><div class="qa-title">Attachment Order</div><ol class="qa-checklist">'+data.packet.map(x=>'<li>'+esc2(withCopiesNote(x))+'</li>').join('')+'</ol></div>';
     }else{
-      html+='<div class="qguide-empty">No packet order found for the current code or issue.</div>';
+      html+='<div class="qguide-empty">No attachment order found for the current code or issue.</div>';
     }
     const needsD001=/\b(?:oxidation|flash|flashing)\b/i.test(sourceText());
     if(needsD001){
