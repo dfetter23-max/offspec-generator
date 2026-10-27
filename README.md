@@ -36,7 +36,8 @@ To update it, copy the new `javascript:` link into the install page's drag butto
 ## Version history
 
 - **7.2** (2026-10-27): Q mode's "Q-Packet Guide" is now "Notification Attachments" and "Packet order" is
-  "Attachment Order". Weight sheets show "(only copies)" like analyticals (not "original" weight sheets).
+  "Attachment Order". All weight sheets show "Relevant weight sheets (only copies)",
+  like analyticals (Z28 and Physical II no longer say "original"). The Manage button is at the bottom.
   Bigger text throughout the panel; the D001 check and Photos notes are regular weight.
 - **7.1** (2026-10-06): In Q Offspec mode, using the FLASH or POS OXIDATION phrase also puts
   "D001 NEEDS ADDED TO MANIFEST." on the next empty miscellaneous line below it (once only).

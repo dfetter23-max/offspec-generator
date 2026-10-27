@@ -3223,7 +3223,9 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
 .qguide-alert .qa-photo-yes{font-weight:900;color:#ffe7ad;font-size:14px}
 /* 7.2: bigger, easier-to-read Notification Attachments panel; D001/Photos notes in regular weight. */
 .qguide-head h3{font-size:16px;letter-spacing:.3px;white-space:nowrap}
-.qguide-head{flex-wrap:wrap;row-gap:6px}
+.qguide-foot{display:flex;justify-content:flex-end;margin-top:10px}
+.qguide-foot button{background:var(--ipt);border:1px solid var(--line);color:var(--accent);padding:6px 10px;border-radius:7px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.qguide-foot button:hover{border-color:var(--accent);background:rgba(38,176,176,.1)}
 .qguide-head .qguide-count{font-size:13px}
 .qguide-alert .qa-title{font-size:15px}
 .qguide-alert .qa-checklist{font-size:17px}
@@ -3351,7 +3353,7 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     },
     {
       "keyword": "haz code|waste code|rcra code|add waste code",
-      "message": "WASTE / HAZ / RCRA CODES \u2014 Z28\nSEND TO: CER/LabPack\nATTACH: Validation report, manifest, original relevant weight sheets, LDR, and supporting documents.\nOn the offspec, explicitly ask whether the code should be ADDED or REMOVED."
+      "message": "WASTE / HAZ / RCRA CODES \u2014 Z28\nSEND TO: CER/LabPack\nATTACH: Validation report, manifest, relevant weight sheets, LDR, and supporting documents.\nOn the offspec, explicitly ask whether the code should be ADDED or REMOVED."
     },
     {
       "keyword": "generator data|generator id|generator phone|generator address|generator erp",
@@ -3371,7 +3373,7 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     },
     {
       "keyword": "inner container profile|bulk liquids",
-      "message": "PHYSICAL II \u2014 Z002\nSEND TO: Q MANAGER\nATTACH: Validation report, manifest, original relevant weight sheets, LDR, and supporting documents.\nNO OFFSPEC NEEDED."
+      "message": "PHYSICAL II \u2014 Z002\nSEND TO: Q MANAGER\nATTACH: Validation report, manifest, relevant weight sheets, LDR, and supporting documents.\nNO OFFSPEC NEEDED."
     },
     {
       "keyword": "non-compat|compatibility",
@@ -3477,7 +3479,7 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     const preview=document.querySelector('#notifScreen .preview-wrap');
     if(!preview||document.getElementById('qPacketGuide'))return;
     const div=document.createElement('div');div.id='qPacketGuide';div.className='qguide';
-    div.innerHTML='<div class="qguide-head"><h3>Notification Attachments</h3><span class="qguide-count" id="qGuideCount"></span><button type="button" id="qGuideManage">⚙ Manage</button></div><div id="qGuideAlerts"></div>';
+    div.innerHTML='<div class="qguide-head"><h3>Notification Attachments</h3><span class="qguide-count" id="qGuideCount"></span></div><div id="qGuideAlerts"></div><div class="qguide-foot"><button type="button" id="qGuideManage">⚙ Manage</button></div>';
     const hint=preview.querySelector(':scope > .hint');if(hint)preview.insertBefore(div,hint);else preview.appendChild(div);document.getElementById('qGuideManage').onclick=openEditor;
   }
   function sourceText(){
@@ -3501,10 +3503,10 @@ body.qmode #notifScreen .preview-wrap>.hint{grid-column:1/-1}
     }
     return splitPacketItems(m[1]).map(capitalizeItem).filter(Boolean);
   }
-  // 7.2: weight sheets go in as copies, like analyticals. "Original ..." weight sheets stay as written.
+  // 7.2: weight sheets always go in as copies, like analyticals (older "original" wording included).
   function withCopiesNote(item){
-    const t=String(item||'').trim();
-    if(/weight sheets?$/i.test(t)&&!/^original\b/i.test(t))return t+' (only copies)';
+    let t=String(item||'').trim();
+    if(/weight sheets?$/i.test(t)){ t=t.replace(/^original\s+/i,''); t=t.charAt(0).toUpperCase()+t.slice(1)+' (only copies)'; }
     return t;
   }
   function findGuideData(){
