@@ -391,6 +391,11 @@ footer.site a:hover { color: var(--ink); }
   .brand .name small { display: none; }
     .home-inner { padding: 34px 18px 60px; }
 }
+.sitepick{margin-left:auto;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sitepick select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:5px 8px;cursor:pointer}
+.sitepick select option{color:#111}
+.sitepick select:hover{border-color:var(--amber)}
+[data-sites][hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -404,11 +409,20 @@ footer.site a:hover { color: var(--ink); }
 
   <nav class="tabs">
     <button class="tab active" data-tab="home"       onclick="showView('home')">Home</button>
-    <a class="tab tab-feature" href="Offspec-Generator.html" target="_blank" rel="noopener">&#9881; Offspec Generator</a>
+    <a class="tab tab-feature" href="Offspec-Generator.html" data-offspec target="_blank" rel="noopener">&#9881; Offspec Generator</a>
     <button class="tab"        data-tab="processcodes" onclick="showView('processcodes')">Process Code Offspecs</button>
     <button class="tab"        data-tab="notifications" onclick="showView('notifications')">Notifications Guide</button>
     <button class="tab"        data-tab="bookmarklets" onclick="showView('home'); scrollToSection('sec-bookmarklets')">Bookmarklets</button>
   </nav>
+
+  <label class="sitepick" title="Your office — remembered on this computer">
+    <span>Office</span>
+    <select id="sitePick">
+      <option value="EC">East Chicago</option>
+      <option value="WI">Milwaukee</option>
+      <option value="TN">Millington</option>
+    </select>
+  </label>
 
 </div>
 
@@ -446,7 +460,7 @@ footer.site a:hover { color: var(--ink); }
     <div class="home-main">
 
     <div class="hero">
-      <div class="eyebrow">Tradebe &middot; East Chicago</div>
+      <div class="eyebrow" id="siteEyebrow">Tradebe &middot; East Chicago</div>
       <h1>Receiving Tools</h1>
       <p>
         Everything for off-spec paperwork in one place — process code rules, the notifications
@@ -472,7 +486,7 @@ footer.site a:hover { color: var(--ink); }
           preserved. Built-in Notification Builder for the matching customer/CSR message.
         </p>
         <div class="hc-actions">
-          <a class="hc-btn primary big" href="Offspec-Generator.html" target="_blank" rel="noopener">
+          <a class="hc-btn primary big" href="Offspec-Generator.html" data-offspec target="_blank" rel="noopener">
             Open the Offspec Generator <span class="arrow">&#8599;</span>
           </a>
         </div>
@@ -508,7 +522,7 @@ footer.site a:hover { color: var(--ink); }
             <span class="foot">Open <span class="arrow">&rarr;</span></span>
           </button>
 
-          <a class="card a-pink" href="manifest-printer/index.html" target="_blank" rel="noopener">
+          <a class="card a-pink" data-sites="EC" href="manifest-printer/index.html" target="_blank" rel="noopener">
             <span class="icon">&#128424;</span>
             <h3>Manifest Printer</h3>
             <p>Fill out a Rejection, NON-HAZ to HAZ, or blank EPA manifest with a live preview, save the print job, then follow the built-in Wi-Fi steps to print at the manifest printer.</p>
@@ -633,10 +647,40 @@ function scrollToSection(elId) {
   if (hash && document.getElementById('view-' + hash)) showView(hash);
 })();
 
-// ── Announcements (Firebase-synced, admin-editable) ──────
+// ── Office picker (remembered per computer; shared with the Offspec Generator) ──
+var SITE_NAMES = { EC: 'East Chicago', WI: 'Milwaukee', TN: 'Millington' };
+function getSite() {
+  try { var s = localStorage.getItem('rtSite'); if (SITE_NAMES[s]) return s; } catch (e) {}
+  return 'EC';
+}
+(function () {
+  var pick = document.getElementById('sitePick');
+  function apply(site) {
+    pick.value = site;
+    document.getElementById('siteEyebrow').innerHTML = 'Tradebe &middot; ' + SITE_NAMES[site];
+    document.querySelectorAll('a[data-offspec]').forEach(function (a) {
+      a.href = 'Offspec-Generator.html?site=' + site;
+    });
+    // Cards marked data-sites="EC,WI" only show for those offices
+    document.querySelectorAll('[data-sites]').forEach(function (el) {
+      el.hidden = el.getAttribute('data-sites').split(',').indexOf(site) < 0;
+    });
+  }
+  pick.addEventListener('change', function () {
+    try { localStorage.setItem('rtSite', pick.value); } catch (e) {}
+    apply(pick.value);
+    if (window.onSiteChange) window.onSiteChange(pick.value);
+  });
+  apply(getSite());
+})();
+
+// ── Announcements (Firebase-synced, admin-editable, one per office) ──────
 (function () {
   var COLLECTION = 'ui';
-  var DOC_ID = 'dashboardAnnouncement';
+  // East Chicago keeps the original doc so existing announcements stay put
+  function docFor(site) { return site === 'EC' ? 'dashboardAnnouncement' : 'dashboardAnnouncement_' + site; }
+  var DOC_ID = docFor(getSite());
+  var unsub = null;
   var PASSWORDS = ['bossnatalie', 'dfetter'];
   var EMPTY = 'No announcements right now.';
 
@@ -734,7 +778,21 @@ function scrollToSection(elId) {
   if (typeof onFirebaseReady === 'function') {
     onFirebaseReady(function (database) {
       db = database;
-      db.collection(COLLECTION).doc(DOC_ID).onSnapshot(function (snap) {
+      listen();
+    });
+    window.onSiteChange = function (site) {
+      DOC_ID = docFor(site);
+      if (!editBox.hidden) closeEditor();
+      display.textContent = 'Loading…';
+      if (db) listen();
+    };
+  } else {
+    render('');
+  }
+
+  function listen() {
+      if (unsub) unsub();
+      unsub = db.collection(COLLECTION).doc(DOC_ID).onSnapshot(function (snap) {
         var data = snap.exists ? snap.data() : {};
         // Don't clobber an admin who is mid-edit
         if (editBox.hidden) render(data.text || '');
@@ -744,9 +802,6 @@ function scrollToSection(elId) {
         display.textContent = 'Could not load announcements.';
         display.classList.add('empty');
       });
-    });
-  } else {
-    render('');
   }
 })();
 </script>
