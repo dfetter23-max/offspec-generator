@@ -395,6 +395,7 @@ footer.site a:hover { color: var(--ink); }
 .sitepick select{font:inherit;font-size:13px;text-transform:none;letter-spacing:0;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:6px;padding:5px 8px;cursor:pointer}
 .sitepick select option{color:#111}
 .sitepick select:hover{border-color:var(--amber)}
+[data-sites][hidden]{display:none!important}
 </style>
 </head>
 <body>
@@ -521,7 +522,7 @@ footer.site a:hover { color: var(--ink); }
             <span class="foot">Open <span class="arrow">&rarr;</span></span>
           </button>
 
-          <a class="card a-pink" href="manifest-printer/index.html" target="_blank" rel="noopener">
+          <a class="card a-pink" data-sites="EC" href="manifest-printer/index.html" target="_blank" rel="noopener">
             <span class="icon">&#128424;</span>
             <h3>Manifest Printer</h3>
             <p>Fill out a Rejection, NON-HAZ to HAZ, or blank EPA manifest with a live preview, save the print job, then follow the built-in Wi-Fi steps to print at the manifest printer.</p>
@@ -659,6 +660,10 @@ function getSite() {
     document.getElementById('siteEyebrow').innerHTML = 'Tradebe &middot; ' + SITE_NAMES[site];
     document.querySelectorAll('a[data-offspec]').forEach(function (a) {
       a.href = 'Offspec-Generator.html?site=' + site;
+    });
+    // Cards marked data-sites="EC,WI" only show for those offices
+    document.querySelectorAll('[data-sites]').forEach(function (el) {
+      el.hidden = el.getAttribute('data-sites').split(',').indexOf(site) < 0;
     });
   }
   pick.addEventListener('change', function () {
