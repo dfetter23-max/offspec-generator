@@ -530,6 +530,9 @@ const $=id=>document.getElementById(id);
 const HF=['so','load','received','current','manifest','generator'];
 const GEN_REQUIRED_FIELDS=['genSite','genMail'];
 HF.concat(GEN_REQUIRED_FIELDS).forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',render); });
+// Office preset: dashboard link (?site=TN) or the office saved on the dashboard
+(function(){try{var q=(new URLSearchParams(location.search).get('site')||localStorage.getItem('rtSite')||'').toUpperCase();
+  var f=$('facility');if(f&&q&&f.querySelector('option[value="'+q+'"]'))f.value=q;}catch(e){}})();
 $('facility').addEventListener('change',render);
 $('initials').addEventListener('input',render);
 
