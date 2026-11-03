@@ -209,8 +209,8 @@ function hasBars(g, x0, y0, w, h){
   for(let i=0;i<row.length;i+=4){ const dark = row[i] < 128 ? 0 : 1; if(dark !== prev) flips++; prev = dark; }
   return flips > 40;
 }
-function covered(found, half, ya, yb){
-  for(const f of Object.values(found)) for(const b of f.boxes){
+function covered(found, half, ya, yb, extra){
+  for(const b of [...Object.values(found).flatMap(f=>f.boxes), ...(extra||[])]){
     const cx = (b[0]+b[2])/2;
     if((half===0) !== (cx < .5)) continue;
     const ov = Math.min(yb, b[3]) - Math.max(ya, b[1]);
@@ -219,8 +219,14 @@ function covered(found, half, ya, yb){
   return false;
 }
 
-async function deepPass(drawAt, rot, found, onProgress){
-  let done = 0; const total = DEEP_SCALES.length * SMEARS.length * THRESH.length;
+// where along this strip does the barcode ink start and end?
+function barSpan(g, x0, y0, w, h){
+  const row = g.getImageData(x0, y0 + (h>>1), w, 1).data; let first = -1, last = -1, prev = 1;
+  for(let i = 0, x = 0; i < row.length; i += 4, x++){ const dark = row[i] < 128 ? 0 : 1; if(dark !== prev){ if(first < 0) first = x; last = x; } prev = dark; }
+  return [x0 + Math.max(0, first), x0 + Math.max(0, last)];
+}
+async function deepPass(drawAt, rot, found, onProgress, extra){
+  let done = 0, left = []; const total = DEEP_SCALES.length * SMEARS.length * THRESH.length;
   for(const s of DEEP_SCALES){
     const cv = rotatedCanvas(await drawAt(s), rot), W = cv.width, H = cv.height;
     const cg = cv.getContext("2d", {willReadFrequently:true});
@@ -230,7 +236,7 @@ async function deepPass(drawAt, rot, found, onProgress){
       const [y0,y1] = strip(H,k);
       for(const half of [0,1]){
         const x0 = half ? Math.floor(W*.45) : 0, x1 = half ? W : Math.ceil(W*.55);
-        if(covered(found, half, y0/H, y1/H)) continue;
+        if(covered(found, half, y0/H, y1/H, extra)) continue;
         if(!hasBars(cg, x0, y0, x1-x0, y1-y0)) continue;
         todo.push([x0,y0,x1-x0,y1-y0,half]);
       }
@@ -242,44 +248,269 @@ async function deepPass(drawAt, rot, found, onProgress){
       for(let i=todo.length-1;i>=0;i--){
         const [x0,y0,w,h,half] = todo[i];
         for(const r of await read(g.getImageData(x0,y0,w,h))) record(found, r, x0, y0, W, H);
-        if(covered(found, half, y0/H, (y0+h)/H)) todo.splice(i,1);
+        if(covered(found, half, y0/H, (y0+h)/H, extra)) todo.splice(i,1);
       }
       await tick();
     }
+    left = todo.map(([x0,y0,w,h,half])=>{ const [a,b] = barSpan(cg, x0, y0, w, h); return {box:[a/W, y0/H, b/W, (y0+h)/H], half}; });
   }
+  return left;   // spots with barcode ink that nothing could read
 }
 
-async function scanSource(drawAt, onProgress){ // drawAt(scale) -> canvas
-  const found = {}, byRot = {};
-  for(const deg of [90, 270]){
-    byRot[deg] = {};
-    for(const s of FAST_SCALES) await fastPass(rotatedCanvas(await drawAt(s), deg), byRot[deg]);
-  }
-  let rot = Object.keys(byRot[90]).length >= Object.keys(byRot[270]).length ? 90 : 270;
-  Object.assign(found, byRot[rot]);
-  if(!Object.keys(found).length){ // labels not sideways? try upright
-    rot = 0; for(const s of FAST_SCALES) await fastPass(rotatedCanvas(await drawAt(s), 0), found);
-  }
-  // add reads from the opposite orientation (boxes flip 180°)
-  const other = rot===90 ? byRot[270] : rot===270 ? byRot[90] : {};
-  for(const [id,f] of Object.entries(other)){
-    const g = found[id] || (found[id] = {hits:0, boxes:[]});
-    g.hits += f.hits; g.boxes.push(...f.boxes.map(b=>[1-b[2],1-b[3],1-b[0],1-b[1]]));
-  }
-  await deepPass(drawAt, rot, found, onProgress);
+// ---------- Code 39 line reader ----------
+// Reads every pixel row across each label and votes digit by digit across all of them.
+//  * bars are judged against bars and spaces against spaces, so faded or bleeding ink doesn't matter
+//  * needs no blank margin, so labels jammed against the form's lines still read
+//  * every character must sit exactly where the barcode's spacing says it should (catches merged bars)
+//  * Code 39 has no check digit, so a digit only counts when it wins its vote by a clear margin
+const C39 = (()=>{ const t = {'0':'000110100','1':'100100001','2':'001100001','3':'101100000','4':'000110001','5':'100110000',
+  '6':'001110000','7':'000100101','8':'100100100','9':'001100100','A':'100001001','B':'001001001','C':'101001000',
+  'D':'000011001','E':'100011000','F':'001011000','G':'000001101','H':'100001100','I':'001001100','J':'000011100',
+  'K':'100000011','L':'001000011','M':'101000010','N':'000010011','O':'100010010','P':'001010010','Q':'000000111',
+  'R':'100000110','S':'001000110','T':'000010110','U':'110000001','V':'011000001','W':'111000000','X':'010010001',
+  'Y':'110010000','Z':'011010000','-':'010000101','.':'110000100',' ':'011000100','*':'010010100'};
+  const m = {}; for(const [c,p] of Object.entries(t)) m[parseInt(p,2)] = c; return m; })();
+const C39_THS = [70, 110, 150, 190];   // light/dark cut-offs tried on every row
+let c39w = 0;                          // width of the last character decoded
 
-  const list = Object.entries(found).map(([id,f])=>{
-    const n = f.boxes.length, box = [0,1,2,3].map(i=>f.boxes.reduce((a,b)=>a+b[i],0)/n);
-    return {id, hits:f.hits, box, col: (box[0]+box[2])/2 < .5 ? 0 : 1};
+function c39char(L, i, n){
+  if(i + 9 > n) return null;
+  const b = [L[i],L[i+2],L[i+4],L[i+6],L[i+8]], s = [L[i+1],L[i+3],L[i+5],L[i+7]];
+  const ob = [0,1,2,3,4].sort((p,q)=>b[q]-b[p]), os = [0,1,2,3].sort((p,q)=>s[q]-s[p]);
+  const bw = b[ob[1]], bn = b[ob[2]], sw = s[os[0]], sn = s[os[1]];
+  // every Code 39 character: 2 wide bars of 5, 1 wide space of 4
+  if(bw < bn*1.4 || sw < sn*1.4) return null;
+  if(b[ob[0]] > bw*1.8 || s[os[3]]*2.5 < sn || b[ob[4]]*2.5 < bn) return null;
+  const key = (1<<(8-2*ob[0])) | (1<<(8-2*ob[1])) | (1<<(7-2*os[0]));
+  c39w = b[0]+b[1]+b[2]+b[3]+b[4]+s[0]+s[1]+s[2]+s[3];
+  return C39[key] || null;
+}
+function c39rowRuns(a, off, W, th, S, L, D){
+  let n = 0, prev = a[off] < th, start = 0;
+  for(let x = 1; x < W; x++){
+    const d = a[off+x] < th;
+    if(d !== prev){ S[n] = start; L[n] = x - start; D[n] = prev ? 1 : 0; n++; start = x; prev = d; }
+  }
+  S[n] = start; L[n] = W - start; D[n] = prev ? 1 : 0; return n + 1;
+}
+function c39findBar(S, D, n, x, tol){
+  let lo = 0, hi = n;
+  while(lo < hi){ const m = (lo+hi) >> 1; if(S[m] < x - tol) lo = m + 1; else hi = m; }
+  let best = -1;
+  for(let k = lo; k < n && S[k] <= x + tol; k++) if(D[k] && (best < 0 || Math.abs(S[k]-x) < Math.abs(S[best]-x))) best = k;
+  return best;
+}
+// each '*' found anchors a forward read (it's the start) and a backward read (it's the stop)
+function c39readLine(S, L, D, n, y, out){
+  for(let i = 0; i < n - 8; i++){
+    if(!D[i] || c39char(L, i, n) !== '*') continue;
+    const cw = c39w, x0 = S[i];
+    const w9 = Array.from(L.subarray(i, i+9)).sort((p,q)=>p-q), nar = (w9[2]+w9[3])/2;
+    const pitch = cw + nar, tol = Math.max(2, nar*.9), wtol = Math.max(3, cw*.1);
+    for(const dir of [1, -1]){
+      const got = new Array(12).fill(null); got[dir === 1 ? 0 : 11] = '*'; let p = pitch;
+      for(let step = 1; step < 12; step++){
+        const pos = dir === 1 ? step : 11 - step;
+        const j = c39findBar(S, D, n, x0 + dir*p*step, tol);
+        if(j < 0 || j + 9 > n) break;
+        const c2 = c39char(L, j, n);
+        if(!c2 || Math.abs(c39w - cw) > wtol){ got[pos] = '?'; continue; }
+        got[pos] = c2;
+        p = Math.abs(S[j] - x0) / step;          // refine the spacing from what's been read
+        if(c2 === '*') break;
+      }
+      let useful = 0; for(let q = 1; q <= 10; q++) if(got[q] && got[q] !== '?') useful++;
+      if(useful >= 2){
+        const xs = dir === 1 ? x0 : x0 - pitch*11, span = pitch*11 + cw;
+        out.push({y, xs, xe: xs + span, xc: xs + span/2, got});
+      }
+    }
+  }
+}
+const C39_ALLOW = p => p === 1 ? 'D' : p === 2 ? '0' : '0123456789';
+function c39top(cnt, p){ const al = C39_ALLOW(p); return Object.entries(cnt).filter(([v])=>al.includes(v)).sort((a,b)=>b[1]-a[1]); }
+
+// group rows into labels (by position AND content, so touching labels never merge) and vote each digit
+function c39vote(hits, W, H){
+  hits.sort((a,b)=>a.y-b.y);
+  const cl = [];
+  for(const h of hits){
+    let best = null;
+    for(const c of cl){
+      if(Math.abs(c.x - h.xc) > W*.08 || h.y - c.y1 > 12) continue;
+      let agree = 0, dis = 0;
+      for(let p = 1; p <= 10; p++){
+        const v = h.got[p]; if(!v || v === '?') continue;
+        const t = c39top(c.v[p], p); if(!t.length || t[0][1] < 3) continue;
+        if(t[0][0] === v) agree++; else dis++;
+      }
+      if(dis > Math.max(1, agree*.25)) continue;
+      best = c; break;
+    }
+    if(!best){ best = {x:h.xc, y0:h.y, y1:h.y, n:0, xs:0, xe:0, rows:[], v:Array.from({length:12}, ()=>({}))}; cl.push(best); }
+    best.rows.push(h); best.y1 = h.y; best.n++; best.x += (h.xc - best.x)/best.n; best.xs += h.xs; best.xe += h.xe;
+    for(let p = 1; p <= 10; p++){ const v = h.got[p]; if(v && v !== '?') best.v[p][v] = (best.v[p][v]||0) + 1; }
+  }
+  return cl.map(c=>{
+    let id = '', guess = '', dom = 99, known = 0;
+    for(let p = 1; p <= 10; p++){
+      const t = c39top(c.v[p], p);
+      if(!t.length){ id += '?'; guess += '?'; dom = 0; continue; }
+      const n1 = t[0][1], n2 = t.length > 1 ? t[1][1] : 0;
+      let r = n1/(n2+1); if(n1 < 4) r = Math.min(r, 1);
+      id += t[0][0]; dom = Math.min(dom, r);
+      if(r >= 3){ guess += t[0][0]; if(p >= 3) known++; } else guess += '?';
+    }
+    // the box covers only rows that agree with the voted number (stray rows from a neighbour don't stretch it)
+    let y0 = c.y0, y1 = c.y1;
+    // (neighbouring drums share a prefix, so a row must match on the last 5 digits to count)
+    // consecutive drums differ only in the last digit, so that digit must be read and match too
+    const ok = c.rows.filter(h=>{ if(h.got[10] !== id[9]) return false; let m = 0; for(let p = 3; p <= 10; p++){ const v = h.got[p]; if(!v || v === '?') continue; if(v !== id[p-1]) return false; if(p >= 6) m++; } return m >= 2; });
+    if(ok.length >= 3){ y0 = Math.min(...ok.map(h=>h.y)); y1 = Math.max(...ok.map(h=>h.y)); }
+    const box = [Math.max(0, c.xs/c.n/W), y0/H, Math.min(1, c.xe/c.n/W), (y1+1)/H];
+    return {id, guess, dom, known, n: c.n, box};
   });
+}
+const boxesOverlap = (a, b)=> Math.min(a[3],b[3]) - Math.max(a[1],b[1]) > .5*Math.min(a[3]-a[1], b[3]-b[1]) && Math.min(a[2],b[2]) > Math.max(a[0],b[0]);
+
+// whole page: returns {reads:[{id,hits,box}], partials:[{guess,box}]}
+async function c39ReadPage(cv){
+  const W = cv.width, H = cv.height, d = cv.getContext("2d", {willReadFrequently:true}).getImageData(0,0,W,H).data;
+  // grey, then a light blur down each column (bars run top-to-bottom here) to knock out speckle
+  const g = new Float32Array(W*H);
+  for(let i = 0, j = 0; j < g.length; i += 4, j++) g[j] = (d[i]*3 + d[i+1]*6 + d[i+2]) / 10;
+  const a = new Float32Array(W*H);
+  for(let y = 0; y < H; y++){
+    const y0 = Math.max(0, y-1), y1 = Math.min(H-1, y+1), k = y1 - y0 + 1, o = y*W;
+    for(let x = 0; x < W; x++){ let s = 0; for(let yy = y0; yy <= y1; yy++) s += g[yy*W + x]; a[o+x] = s/k; }
+  }
+  const S = new Int32Array(W+1), L = new Int32Array(W+1), D = new Uint8Array(W+1), hits = [];
+  for(let y = 0; y < H; y++){
+    for(const th of C39_THS){
+      const n = c39rowRuns(a, y*W, W, th, S, L, D);
+      if(n >= 40) c39readLine(S, L, D, n, y, hits);
+    }
+    if(y % 200 === 0) await tick();
+  }
+  const labels = c39vote(hits, W, H);
+  const reads = [], partials = [];
+  for(const l of labels){
+    if(!l.id.includes('?') && l.n >= 6 && l.dom >= 1.5){
+      const same = reads.find(r=>r.id === l.id);
+      if(same){ same.box = [Math.min(same.box[0],l.box[0]), Math.min(same.box[1],l.box[1]), Math.max(same.box[2],l.box[2]), Math.max(same.box[3],l.box[3])]; same.hits = Math.max(same.hits, l.dom >= 3 ? 9 : 1); }
+      else reads.push({id:l.id, hits: l.dom >= 3 ? 9 : 1, box:l.box});
+    }
+  }
+  for(const l of labels){
+    if(l.n < 10 || l.known < 4 || l.box[2] - l.box[0] < .15) continue;
+    if(!l.id.includes('?') && l.n >= 6 && l.dom >= 1.5) continue;
+    if(reads.some(r=>boxesOverlap(r.box, l.box))) continue;
+    const other = partials.find(q=>boxesOverlap(q.box, l.box));
+    if(other){ if(l.known > other.known) Object.assign(other, {guess:l.guess, known:l.known, box:l.box}); continue; }
+    partials.push({guess:'D0' + l.guess.slice(2), known:l.known, box:l.box});
+  }
+  const located = [];
+  for(const l of labels){
+    if(l.n < 15 || l.box[2] - l.box[0] < .15 || l.box[2] - l.box[0] > .5) continue;
+    if(reads.some(r=>boxesOverlap(r.box, l.box)) || partials.some(q=>boxesOverlap(q.box, l.box))) continue;
+    const o = located.find(q=>boxesOverlap(q.box, l.box));
+    if(o){ if(l.n > o.n) Object.assign(o, l); continue; }
+    located.push({n:l.n, box:l.box});
+  }
+  return {reads, partials, located};
+}
+
+// A scanned PDF is just one picture per page. Take that picture as-is (no re-drawing), so the
+// bars keep their exact edges — re-drawing blurs them slightly and costs reads on worn labels.
+async function nativeScan(page){
+  try{
+    const ops = await page.getOperatorList(), idx = [];
+    for(let i = 0; i < ops.fnArray.length; i++) if(ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) idx.push(i);
+    if(idx.length !== 1) return null;
+    const name = ops.argsArray[idx[0]][0];
+    const img = await new Promise(res=>(name.startsWith("g_") ? page.commonObjs : page.objs).get(name, res));
+    let c = document.createElement("canvas");
+    if(img.bitmap){ c.width = img.bitmap.width; c.height = img.bitmap.height; c.getContext("2d").drawImage(img.bitmap, 0, 0); }
+    else {
+      const {width:w, height:h, kind, data} = img; c.width = w; c.height = h;
+      const g = c.getContext("2d"), id = g.createImageData(w, h), o = id.data;
+      if(kind === 3) o.set(data);
+      else if(kind === 2){ for(let i = 0, j = 0; i < w*h; i++){ o[j++] = data[i*3]; o[j++] = data[i*3+1]; o[j++] = data[i*3+2]; o[j++] = 255; } }
+      else if(kind === 1){ const rb = (w+7) >> 3;
+        for(let y = 0; y < h; y++) for(let x = 0; x < w; x++){ const v = (data[y*rb + (x>>3)] >> (7-(x&7))) & 1 ? 255 : 0, j = (y*w+x)*4; o[j] = o[j+1] = o[j+2] = v; o[j+3] = 255; } }
+      else return null;
+      g.putImageData(id, 0, 0);
+    }
+    if(page.rotate) c = rotatedCanvas(c, page.rotate);
+    const vp = page.getViewport({scale:1});
+    if(Math.abs(c.width/c.height - vp.width/vp.height) > .02) return null;   // not a plain full-page scan
+    return {canvas:c, scale:c.width/vp.width};
+  }catch(e){ console.warn("native scan not used", e); return null; }
+}
+
+async function scanSource(drawAt, onProgress, baseScale = 2.8){ // drawAt(scale) -> canvas
+  // 1) line reader on both sideways orientations at the scan's own resolution
+  onProgress("reading barcodes");
+  const base = await drawAt(baseScale);
+  let best = null;
+  for(const deg of [90, 270]){
+    const r = await c39ReadPage(rotatedCanvas(base, deg));
+    if(!best || r.reads.length > best.reads.length) best = {deg, ...r};
+  }
+  let rot = best.deg, reads = best.reads, partials = best.partials, located = best.located;
+  const found = {};
+  if(!reads.length){
+    // nothing sideways read: fall back to zxing on every orientation
+    reads = []; partials = []; located = [];
+    const byRot = {};
+    for(const deg of [90, 270]){ byRot[deg] = {}; for(const s of FAST_SCALES) await fastPass(rotatedCanvas(await drawAt(s), deg), byRot[deg]); }
+    rot = Object.keys(byRot[90]).length >= Object.keys(byRot[270]).length ? 90 : 270;
+    Object.assign(found, byRot[rot]);
+    if(!Object.keys(found).length){ rot = 0; for(const s of FAST_SCALES) await fastPass(rotatedCanvas(await drawAt(s), 0), found); }
+  } else {
+    // 2) zxing on the same orientation: cross-check, plus heavy-ink labels it handles better
+    onProgress("cross-checking");
+    for(const s of FAST_SCALES) await fastPass(rotatedCanvas(await drawAt(s), rot), found);
+  }
+  // 3) deep retry only where there's barcode ink and nothing read yet
+  await deepPass(drawAt, rot, found, f=>onProgress(`deep check ${Math.round(f*100)}%`), [...reads.map(r=>r.box), ...partials.map(q=>q.box)]);
+
+  // 4) merge: the two readers must agree wherever both read a label
+  for(const [id, f] of Object.entries(found)){
+    const n = f.boxes.length, box = [0,1,2,3].map(i=>f.boxes.reduce((a,b)=>a+b[i],0)/n);
+    // same spot = each box's middle sits inside the other one
+    const mid = b=>(b[1]+b[3])/2, inside = (y,b)=>y >= b[1] && y <= b[3];
+    const mine = reads.find(r=>boxesOverlap(r.box, box) && inside(mid(box), r.box) && inside(mid(r.box), box));
+    if(mine){
+      if(mine.id === id){ if(!mine.alt) mine.hits = 9; }                   // both readers agree
+      else if(!mine.alt){ mine.alt = id; mine.hits = 1; }                  // disagree: needs a look
+      continue;
+    }
+    const part = partials.find(q=>boxesOverlap(q.box, box));
+    const fits = part && [...part.guess].every((c,i)=>c === '?' || c === id[i]);
+    if(part) partials.splice(partials.indexOf(part), 1);
+    if(reads.some(r=>r.id === id)) continue;
+    reads.push({id, hits: part && !fits ? 1 : f.hits, box: part ? part.box : box});
+  }
+  // a partial that fits a number already read (even shifted a digit or two) is just a fragment of that label
+  const fitsShift = (g, id)=>[-2,-1,0,1,2].some(sh=>[...g].every((c,k)=>k < 2 || c === '?' || c === id[k+sh]));
+  for(let i = partials.length-1; i >= 0; i--)
+    if(partials[i].known < 5 || reads.some(r=>fitsShift(partials[i].guess, r.id))) partials.splice(i, 1);
+  // labels the reader located but nobody could read: point them out so nothing has to be hunted for
+  for(const l of located){
+    if([...reads, ...partials].some(r=>boxesOverlap(r.box, l.box))) continue;
+    partials.push({guess:'D0????????', known:0, box:l.box, missed:true});
+  }
+  const list = reads.map(r=>({...r, col: (r.box[0]+r.box[2])/2 < .5 ? 0 : 1}));
   list.sort((a,b)=> a.col-b.col || a.box[1]-b.box[1]);
-  let view = rotatedCanvas(await drawAt(2.8), rot), drums = list.map(({id,hits,box})=>({id,hits,box}));
+  let view = rotatedCanvas(base, rot), drums = list.map(({id,hits,box,alt})=>alt ? {id,hits,box,alt} : {id,hits,box});
   if(upsideDown(view, drums)){
     view = rotatedCanvas(view, 180);
-    drums.forEach(d=>d.box = [1-d.box[2],1-d.box[3],1-d.box[0],1-d.box[1]]);
+    const flip = b=>[1-b[2],1-b[3],1-b[0],1-b[1]];
+    drums.forEach(d=>d.box = flip(d.box)); partials.forEach(q=>q.box = flip(q.box));
     sortDrums(drums);
   }
-  return {drums, view};
+  return {drums, partials: partials.map(({guess,box,missed})=>({guess,box,missed:!!missed})), view};
 }
 
 // Every drum label has its printed number immediately LEFT of the barcode when the sheet is upright.
@@ -319,13 +550,19 @@ async function handleFiles(files){
           const page = await pdf.getPage(n), cache = {};
           const msg = `Reading ${file.name} — page ${n} of ${pdf.numPages}`;
           setStatus(msg + "…");
+          const nat = await nativeScan(page), baseScale = nat ? Math.min(nat.scale, 4.17) : 2.8;
           const res = await scanSource(async s=>{
             if(cache[s]) return cache[s];
+            if(nat){
+              if(Math.abs(s - nat.scale) < .05) return cache[s] = nat.canvas;
+              const k = s/nat.scale, c = document.createElement("canvas"); c.width = Math.round(nat.canvas.width*k); c.height = Math.round(nat.canvas.height*k);
+              const g = c.getContext("2d"); g.imageSmoothingQuality = "high"; g.drawImage(nat.canvas, 0, 0, c.width, c.height); return cache[s] = c;
+            }
             const vp = page.getViewport({scale:s});
             const c = document.createElement("canvas"); c.width = vp.width; c.height = vp.height;
             await page.render({canvasContext:c.getContext("2d"), viewport:vp}).promise;
             return cache[s] = c;
-          }, f=>setStatus(`${msg} — deep check ${Math.round(f*100)}%`));
+          }, t=>setStatus(`${msg} — ${t}…`), baseScale);
           pages.push({label:`${file.name} — page ${n}`, ...res, count:""});
           render();
         }
@@ -337,7 +574,7 @@ async function handleFiles(files){
           const f = s/2.8; // treat image as ~200 dpi
           const c = document.createElement("canvas"); c.width = bmp.width*f; c.height = bmp.height*f;
           c.getContext("2d").drawImage(bmp,0,0,c.width,c.height); return cache[s] = c;
-        }, f=>setStatus(`Reading ${file.name} — deep check ${Math.round(f*100)}%`));
+        }, t=>setStatus(`Reading ${file.name} — ${t}…`));
         pages.push({label:file.name, ...res, count:""}); render();
       }
     }catch(e){
@@ -345,7 +582,8 @@ async function handleFiles(files){
       pages.push({label:`${file.name} — could not read (${e.message||e})`, drums:[], count:""}); render();
     }
   }
-  setStatus("Done. Look for labels without a green box, and enter each sheet's count.");
+  const np = pages.reduce((a,p)=>a + (p.partials||[]).length, 0);
+  setStatus(np ? `Done. ${np} label${np>1?"s":""} to finish (red dashed) — click each one. Then enter each sheet's count.` : "Done. Look for labels without a green box, and enter each sheet's count.");
 }
 
 // ---------- UI ----------
@@ -367,6 +605,13 @@ function drawThumb(p, cv){
     g.fillRect(x0*W-6, y0*H-4, (x1-x0)*W+12, (y1-y0)*H+8);
     g.strokeRect(x0*W-6, y0*H-4, (x1-x0)*W+12, (y1-y0)*H+8);
   }
+  g.setLineDash([10,6]); g.strokeStyle = "#ef4444"; g.fillStyle = "#ef444426";
+  for(const q of (p.partials||[])){
+    const [x0,y0,x1,y1] = q.box;
+    g.fillRect(x0*W-6, y0*H-4, (x1-x0)*W+12, (y1-y0)*H+8);
+    g.strokeRect(x0*W-6, y0*H-4, (x1-x0)*W+12, (y1-y0)*H+8);
+  }
+  g.setLineDash([]);
 }
 function render(){
   const seen = new Set();
@@ -374,13 +619,17 @@ function render(){
   pages.forEach(p=>{
     const n = p.drums.length, want = parseInt(p.count,10);
     const el = document.createElement("div"); el.className = "page" + (want && want !== n ? " bad" : "");
-    el.innerHTML = `<h3><span>${p.label}</span><span>${n} drums found</span></h3>`;
+    const np = (p.partials||[]).length;
+    el.innerHTML = `<h3><span>${p.label}</span><span>${n} drums found${np ? ` · <span style="color:var(--danger)">${np} to finish</span>` : ""}</span></h3>`;
     const body = document.createElement("div"); body.className = p.view ? "pbody" : "";
     if(p.view){
       const t = document.createElement("div"); t.className = "thumb"; t.title = "Click a label without a green box to zoom in and type it";
       const cv = document.createElement("canvas"); t.appendChild(cv); drawThumb(p, cv);
       t.onclick = e=>{ const r = cv.getBoundingClientRect(), fx = (e.clientX-r.left)/r.width, fy = (e.clientY-r.top)/r.height;
-        const hit = p.drums.find(d=>d.box && fx>=d.box[0]-.02 && fx<=d.box[2]+.02 && fy>=d.box[1]-.008 && fy<=d.box[3]+.008);
+        const inBox = b=>fx>=b[0]-.02 && fx<=b[2]+.02 && fy>=b[1]-.008 && fy<=b[3]+.008;
+        const part = (p.partials||[]).find(q=>inBox(q.box));
+        if(part) return openZoom(p, part.box[0] + .05, (part.box[1]+part.box[3])/2, null, part);
+        const hit = p.drums.find(d=>d.box && inBox(d.box));
         openZoom(p, hit ? hit.box[0] + .05 : fx, fy, hit); };
       body.appendChild(t);
     }
@@ -391,6 +640,7 @@ function render(){
       const fb = c.querySelector(".flip");
       if(fb) fb.onclick = ()=>{ p.view = rotatedCanvas(p.view, 180);
         p.drums.forEach(d=>{ if(d.box) d.box = [1-d.box[2],1-d.box[3],1-d.box[0],1-d.box[1]]; });
+        (p.partials||[]).forEach(q=>q.box = [1-q.box[2],1-q.box[3],1-q.box[0],1-q.box[1]]);
         sortDrums(p.drums); render(); };
       const inp = c.querySelector("input"), sp = c.querySelector("span");
       const upd = ()=>{ const w = parseInt(inp.value,10);
@@ -412,7 +662,7 @@ function render(){
       chips.appendChild(c);
     });
     right.appendChild(chips);
-    if(p.view) right.insertAdjacentHTML("beforeend", `<div class="hint">Green box = read, orange = read once. Click a label with no box to type it in. Click an orange box or chip to confirm or correct it.</div>`);
+    if(p.view) right.insertAdjacentHTML("beforeend", `<div class="hint">Green = read, orange = double-check, <span style="color:var(--danger)">red dashed = needs you</span> (click it — any digits it's sure of are already filled in). Click a label with no box to type it in. Click any box or chip to confirm or correct it.</div>`);
     body.appendChild(right); el.appendChild(body);
     $("pages").appendChild(el);
   });
@@ -431,7 +681,7 @@ function checkWarn(){
 }
 
 // ---------- zoom-in manual entry ----------
-let zoomPage = null, zoomAt = null, zoomDrum = null;
+let zoomPage = null, zoomAt = null, zoomDrum = null, zoomPart = null;
 const zIn = ["z1","z2","z3"].map($);
 let zLevel = 1, zCenter = [0,0];
 function drawZoom(){
@@ -441,25 +691,30 @@ function drawZoom(){
   const z = $("zcv"), k = 2*zLevel; z.width = V.width*.5*2; z.height = V.height*.09*2;
   const g = z.getContext("2d"); g.imageSmoothingQuality = "high";
   g.drawImage(V, sx, sy, cw, ch, 0, 0, z.width, z.height);
-  if(drum){ const [x0,y0,x1,y1] = drum.box; g.strokeStyle = drum.hits < 2 ? "#f59e0b" : "#16a34a"; g.lineWidth = 4;
+  const mark = drum || zoomPart;
+  if(mark){ const [x0,y0,x1,y1] = mark.box; g.strokeStyle = !drum ? "#ef4444" : drum.hits < 2 ? "#f59e0b" : "#16a34a"; g.lineWidth = 4;
     g.strokeRect((x0*V.width-sx)*k-8, (y0*V.height-sy)*k-6, (x1-x0)*V.width*k+16, (y1-y0)*V.height*k+12); }
   z._map = {sx, sy, cw, ch};
   $("zlvl").textContent = zLevel + "×";
 }
-function openZoom(p, fx, fy, drum){
-  zoomPage = p; zoomAt = [fx, fy]; zoomDrum = drum || null;
+function openZoom(p, fx, fy, drum, part){
+  zoomPage = p; zoomAt = [fx, fy]; zoomDrum = drum || null; zoomPart = part || null;
   zLevel = 1; zCenter = [fx, fy]; drawZoom();
-  const digits = drum ? drum.id.slice(1) : "";
+  const digits = drum ? drum.id.slice(1) : part ? part.guess.slice(1) : "";
   zIn.forEach((inp,i)=>inp.value = digits.slice(i*3, i*3+3));
   $("zadd").textContent = drum ? "Save change" : "Add to this page";
   $("zok").hidden = !drum;
-  $("zmsg").textContent = drum ? (drum.hits < 2 ? "Read only once — check it against the label, then confirm or correct it." : "Correct the number if it's wrong.") : "";
+  $("zmsg").textContent = drum ? (drum.alt ? `The two readers disagree: ${drum.id} or ${drum.alt}. Check the label, then confirm or correct it.`
+      : drum.hits < 2 ? "Not fully sure of this one — check it against the label, then confirm or correct it." : "Correct the number if it's wrong.")
+    : part ? (part.missed ? "There's a barcode here nothing could read — type the number." : "Partly read — replace the ? digits.") : "";
   $("zoom").hidden = false;
-  zIn[0].focus(); if(drum) zIn[0].select();
+  const first = part ? Math.max(0, zIn.findIndex(i=>i.value.includes("?"))) : 0;
+  zIn[first].focus(); if(drum || part) zIn[first].select();
 }
 // three boxes of 3 digits, auto-jump to the next box
 zIn.forEach((inp,i)=>{
-  inp.addEventListener("input", ()=>{ inp.value = inp.value.replace(/\D/g,"").slice(0,3); if(inp.value.length===3 && zIn[i+1]) { zIn[i+1].focus(); zIn[i+1].select(); } });
+  inp.addEventListener("input", ()=>{ inp.value = inp.value.replace(/[^\d?]/g,"").slice(0,3);
+    if(inp.value.length===3 && !inp.value.includes("?")){ const nx = zIn.slice(i+1).find(z=>z.value.length<3 || z.value.includes("?")) || zIn[i+1]; if(nx){ nx.focus(); nx.select(); } } });
   inp.addEventListener("keydown", e=>{
     if(e.key==="Backspace" && !inp.value && zIn[i-1]){ zIn[i-1].focus(); }
     if(e.key==="Enter") $("zadd").click();
@@ -475,12 +730,17 @@ $("zcv").onclick = e=>{ // zoom in further on the clicked spot
 $("zin2").onclick = ()=>{ zLevel = Math.min(6, zLevel+1); drawZoom(); };
 $("zout2").onclick = ()=>{ zLevel = Math.max(1, zLevel-1); if(zLevel===1) zCenter = [...zoomAt]; drawZoom(); };
 $("zoom").onclick = e=>{ if(e.target === $("zoom")) $("zoom").hidden = true; };
-$("zok").onclick = ()=>{ if(zoomDrum){ zoomDrum.hits = Math.max(zoomDrum.hits, 9); zoomDrum.confirmed = true; } $("zoom").hidden = true; render(); };
+$("zok").onclick = ()=>{ if(zoomDrum){ zoomDrum.hits = Math.max(zoomDrum.hits, 9); zoomDrum.confirmed = true; delete zoomDrum.alt; } $("zoom").hidden = true; render(); };
 $("zadd").onclick = ()=>{
   const v = "D" + zIn.map(i=>i.value).join("");
-  if(!DRUM_RE.test(v)){ $("zmsg").textContent = "Needs 3 sets of 3 digits, starting with 0"; return; }
+  if(!DRUM_RE.test(v)){ $("zmsg").textContent = v.includes("?") ? "Replace the ? digits first" : "Needs 3 sets of 3 digits, starting with 0"; return; }
   if(zoomPage.drums.some(d=>d.id===v && d!==zoomDrum)){ $("zmsg").textContent = "Already on this page"; return; }
-  if(zoomDrum){ zoomDrum.id = v; zoomDrum.hits = 9; zoomDrum.manual = true; $("zoom").hidden = true; render(); return; }
+  if(zoomDrum){ zoomDrum.id = v; zoomDrum.hits = 9; zoomDrum.manual = true; delete zoomDrum.alt; $("zoom").hidden = true; render(); return; }
+  if(zoomPart){
+    zoomPage.partials.splice(zoomPage.partials.indexOf(zoomPart), 1);
+    zoomPage.drums.push({id:v, hits:9, manual:true, box:zoomPart.box}); sortDrums(zoomPage.drums);
+    $("zoom").hidden = true; render(); return;
+  }
   // mark the clicked label green on the picture and keep the list in sheet order
   const [fx,fy] = zoomAt, half = fx < .5 ? 0 : 1;
   const box = [half ? .55 : .1, Math.max(0, fy-.012), half ? .9 : .45, Math.min(1, fy+.012)];
@@ -508,7 +768,7 @@ drop.ondrop = e=>{ e.preventDefault(); drop.classList.remove("over"); handleFile
 
 // ---------- date / tank / shift ----------
 let selDate = new Date(); selDate.setHours(0,0,0,0); selDate.setDate(selDate.getDate()-1);
-const tankSel = new Set(), TANKS = ["6","7","24","25","26","27","28","DEPACK","SDS1","SDS2","VRC","Other"];
+const tankSel = new Set(), TANKS = ["6","7","24","25","26","27","28","118","213","VT25","VT28","VT69","VT301","DEPACK","SDS1","SDS2","VRC","Other"];
 let shiftSel = "";
 const pad = n=>String(n).padStart(2,"0");
 const ymd = d=>`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
@@ -576,13 +836,15 @@ function drawShifts(){
 // Matches the existing files: 20261022_Tank 6&7_1st Shift / 20261022_DEPACK_
 function fileBase(){
   const nums = TANKS.filter(t=>/^\d+$/.test(t) && tankSel.has(t));
-  const words = TANKS.filter(t=>!/^\d+$/.test(t) && t!=="Other" && tankSel.has(t));
+  const vts = TANKS.filter(t=>/^VT\d+$/.test(t) && tankSel.has(t)).map(t=>t.slice(2));
+  const words = TANKS.filter(t=>!/^\d+$/.test(t) && !/^VT\d/.test(t) && t!=="Other" && tankSel.has(t));
   if(tankSel.has("Other") && (window._other||"").trim()) words.push(window._other.trim());
   const parts = [];
   if(nums.length) parts.push(`Tank ${nums.join("&")}`);
+  if(vts.length) parts.push(`VT${vts.join("&")}`);
   parts.push(...words);
   if(!parts.length) return null;
-  const onlyDepack = !nums.length && words.length===1 && words[0]==="DEPACK";
+  const onlyDepack = !nums.length && !vts.length && words.length===1 && words[0]==="DEPACK";
   return `${ymd(selDate)}_${parts.join(" ")}_${onlyDepack ? "" : shiftSel ? shiftSel+" Shift" : "?"}`;
 }
 function updateName(){
