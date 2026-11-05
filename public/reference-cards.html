@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reference Cards · Receiving Tools</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&family=Inter:wght@400;600;700&display=swap">
+<style>
+:root{--bg:#0a0c12;--surface:#12151f;--surface-2:#171b28;--line:#232838;--ink:#e8eaf0;--muted:#7d859a;--dim:#565e73;--amber:#f5a623;--blue:#5b8aff;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;padding:0 max(16px,env(safe-area-inset-left,0px))}
+header{max-width:980px;margin:0 auto;padding:22px 0 10px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line)}
+header h1{font-size:20px;margin:0}
+header a{margin-left:auto;font:500 12px var(--mono);color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+header a:hover{color:var(--ink);border-color:var(--muted)}
+main{max-width:980px;margin:0 auto;padding:18px 0 40px}
+.intro{color:var(--muted);font-size:14px;max-width:62ch;margin:0 0 18px}
+.search{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:9px 12px;font:14px Inter,sans-serif;margin-bottom:18px}
+.search:focus{outline:none;border-color:var(--amber)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.rc{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;text-decoration:none;color:var(--ink);transition:border-color .12s,background .12s}
+.rc:hover,.rc:focus-visible{border-color:var(--blue);background:var(--surface-2);outline:none}
+.rc .tag{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--blue)}
+.rc h3{margin:0;font-size:16px}
+.rc p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.rc .foot{margin-top:auto;font:500 11px var(--mono);color:var(--dim)}
+.empty{color:var(--dim);font-size:13px}
+</style></head><body>
+<header><h1>Reference Cards</h1><a href="dashboard.html">&larr; Dashboard</a></header>
+<main>
+<p class="intro">Short, printable how-to cards for common tasks. Open one to read it on screen, then use Print / Save PDF for a paper copy.</p>
+<input class="search" id="q" type="search" placeholder="Search cards…" aria-label="Search cards">
+<div class="grid" id="grid">
+  <a class="rc" href="reference-cards/partial-delivery.html" data-k="sap schedule lines delivered qty partial delivery drum va02 deliver">
+    <span class="tag">SAP · Sales Order</span>
+    <h3>Fixing a Partially Delivered Drum</h3>
+    <p>Delivered qty doesn't match the drum count? Split the schedule line, deliver, and set the full quantity.</p>
+    <span class="foot">2 pages · printable</span>
+  </a>
+</div>
+<p class="empty" id="none" hidden>No cards match that search.</p>
+</main>
+<script>
+const q=document.getElementById('q'),cards=[...document.querySelectorAll('.rc')],none=document.getElementById('none');
+q.addEventListener('input',()=>{const t=q.value.toLowerCase().trim();let n=0;cards.forEach(c=>{const m=!t||(c.textContent+' '+c.dataset.k).toLowerCase().includes(t);c.hidden=!m;if(m)n++});none.hidden=n>0});
+</script>
+</body></html>
