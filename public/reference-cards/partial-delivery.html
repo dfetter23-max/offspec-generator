@@ -1,0 +1,139 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fixing a Partially Delivered Drum · Reference Card</title>
+<style>
+@page{size:Letter;margin:0.45in 0.55in}
+*{box-sizing:border-box}
+body{font-family:"Segoe UI",Arial,"DejaVu Sans",sans-serif;color:#1d2430;font-size:10.5pt;line-height:1.45;margin:0}
+h1{font-size:19pt;margin:0 0 4px}
+.eyebrow{font-size:8pt;letter-spacing:.08em;text-transform:uppercase;color:#5b6575}
+p{margin:0 0 6px}
+.facts{display:flex;gap:8px;margin:10px 0 4px}
+.fact{flex:1;border:1px solid #cdd3dc;padding:6px 10px}
+.fact b{display:block;font-family:"Courier New",monospace;font-size:15pt}
+.fact span{font-size:8pt;color:#5b6575}
+.bad b{color:#b3261e}.good b{color:#1f7a3a}
+.step{break-inside:avoid;margin-top:11px}
+h2{font-size:12.5pt;margin:0 0 5px;display:flex;gap:8px;align-items:center}
+.n{background:#0a5ea8;color:#fff;font-family:"Courier New",monospace;padding:0 7px;border-radius:3px}
+.math{font-family:"Courier New",monospace;background:#eef3f9;border-left:3px solid #0a5ea8;padding:6px 12px;font-size:11pt}
+ol{margin:2px 0 4px;padding-left:20px}ol li{margin-bottom:3px}
+.note{font-size:9pt;color:#5b6575;margin-top:4px}
+.two{display:flex;gap:10px}.box{flex:1;border:1px solid #cdd3dc;padding:8px 12px}.box h3{margin:0 0 4px;font-size:10.5pt}
+.pill{font-size:7.5pt;color:#1f7a3a;border:1px solid #1f7a3a;border-radius:9px;padding:0 6px;margin-right:4px}
+
+/* ---- SAP GUI look ---- */
+.sap{border:1px solid #9fb3c8;background:#f2f6fa;font-family:Tahoma,Arial,"DejaVu Sans",sans-serif;font-size:8.3pt;color:#1a1a1a;margin-top:8px}
+.sap .top{padding:6px 8px 4px;display:grid;grid-template-columns:auto 52px 1fr auto 40px 1fr;gap:3px 8px;align-items:center;background:#fff}
+.f{font-family:"Courier New",monospace;font-size:8.6pt;border:1px solid #8ea2b8;background:#fff;padding:1px 4px;min-height:15px;white-space:nowrap}
+.ro{background:#e9eef4}
+.lab{border:1px solid #c9d4e0;padding:1px 4px;background:#fff}
+.tabs{display:flex;gap:1px;padding:5px 6px 0;background:#fff;border-bottom:1px solid #9fb3c8}
+.tabs span{border:1px solid #9fb3c8;border-bottom:0;border-radius:5px 5px 0 0;padding:2px 9px;background:linear-gradient(#f4f7fa,#dde6ef)}
+.tabs .on{background:#cfe0f1;font-weight:bold}
+.body{padding:6px 8px}
+.hdr{display:grid;grid-template-columns:110px 90px 1fr 90px 140px 30px;gap:3px 8px;align-items:center;margin-bottom:8px}
+.grp{border:1px solid #9fb3c8;background:#fff}
+.grp .gt{background:#dae5f0;padding:2px 8px;border-bottom:1px solid #9fb3c8}
+table{border-collapse:collapse;width:100%}
+th{background:#e4ecf4;font-weight:normal;text-align:left;padding:2px 4px;border:1px solid #b9c7d6;white-space:nowrap}
+td{border:1px solid #c9d4e0;padding:1px 4px;height:16px;font-family:"Courier New",monospace;font-size:8.6pt;text-align:right;background:#fff}
+td.g{background:#e9eef4}td.sel{background:#dfe6ee;width:10px}td.p{text-align:left;color:#0a3a8a;width:12px}
+td.l{text-align:left}td.dd{color:#555;text-align:right}
+td.hl,.f.hl{background:#fff3a0!important;outline:2px solid #d33;outline-offset:-2px;font-weight:bold}
+.co{display:inline-block;background:#d33;color:#fff;border-radius:50%;width:15px;height:15px;font:bold 8pt Arial;text-align:center;line-height:15px;margin-left:3px;vertical-align:middle}
+.menu{background:#fff;border-bottom:1px solid #9fb3c8;padding:3px 8px;display:flex;gap:14px}
+.menu .on{background:#fff3a0;outline:2px solid #d33;padding:0 4px;font-weight:bold}
+
+@media screen{
+ html{background:#5d6675}
+ body{max-width:8.5in;margin:56px auto 32px;background:#fff;padding:.45in .55in;box-shadow:0 4px 24px rgba(0,0,0,.35)}
+ .sheet-wrap{overflow-x:auto}
+ .tb{position:fixed;top:0;left:0;right:0;z-index:5;background:#0a0c12;color:#e8eaf0;display:flex;gap:10px;align-items:center;padding:8px max(16px,env(safe-area-inset-left,0px));font:600 12px ui-monospace,monospace;border-bottom:1px solid #232838}
+ .tb a,.tb button{color:#e8eaf0;text-decoration:none;border:1px solid #232838;background:#12151f;border-radius:7px;padding:5px 11px;font:inherit;cursor:pointer}
+ .tb button{margin-left:auto;background:#f5a623;color:#0a0c12;border-color:#f5a623}
+ .tb a:hover{border-color:#7d859a}
+}
+@media screen and (max-width:700px){body{padding:20px 14px;margin-top:48px}.sap{overflow-x:auto}}
+@media print{.tb{display:none}}
+</style></head><body>
+<nav class="tb"><a href="../reference-cards.html">&larr; Reference Cards</a><a href="../dashboard.html">Dashboard</a><button onclick="window.print()">&#128424; Print / Save PDF</button></nav>
+
+
+<div class="eyebrow">SAP · Sales Order · Schedule Lines</div>
+<h1>Fixing a Partially Delivered Drum</h1>
+<p>Sometimes an order line only partly delivers: SAP shows an odd <b>Delivered qty</b> instead of the full drum count, and the drum can't be fully delivered or billed. This guide walks through the fix with a simple example.</p>
+
+<div class="step">
+<h2><span class="n">1</span>Find the problem on the Schedule lines tab</h2>
+<p>Open the sales order, double-click the line item, and go to the <b>Schedule lines</b> tab. Order Quantity is <b>2</b>, but Delivered qty shows <b>1.050</b>.</p>
+<div class="sap">
+ <div class="top"><span>Sales Document Item</span><span class="f ro">70</span><span></span><span>Item Category</span><span class="f ro">ZTM2</span><span>SO: In charge custom</span>
+ <span>Material</span><span class="f ro" style="grid-column:span 2;width:110px">90002718</span><span style="grid-column:span 3">RS2-Non-Halo Organic Solids Recycle</span></div>
+ <div class="tabs"><span>Sales A</span><span>Sales B</span><span>Shipping</span><span>Billing Document</span><span>Conditions</span><span>Account assignment</span><span class="on">Schedule lines</span><span>Partners</span><span>Texts</span></div>
+ <div class="body">
+  <div class="hdr"><span style="color:#888">☐ Fixed date and qty</span><span></span><span></span><span>Order Quantity</span><span class="f ro" style="text-align:right">2</span><span class="f ro">Z17</span>
+  <span>Delivery time</span><span class="f">&nbsp;▾</span><span></span><span>Delivered qty</span><span class="f ro hl" style="text-align:right">1.050</span><span><span class="co">!</span></span></div>
+  <div class="grp"><div class="gt">Quantities/Dates</div><table>
+  <tr><th></th><th>P</th><th>Delivery D...</th><th>Order quantity</th><th>Rounded qty</th><th>Confirmed Qty</th><th>S...</th><th>Delivery block</th><th>Delivered qty</th><th>Sc...</th></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td class="l">10/21/2026</td><td>2</td><td class="g">2</td><td class="g">2</td><td class="g l">Z17</td><td class="dd">▾</td><td class="g">2</td><td class="l">ZN</td></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td></td><td></td><td class="g"></td><td class="g"></td><td class="g"></td><td class="dd">▾</td><td class="g"></td><td></td></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td></td><td></td><td class="g"></td><td class="g"></td><td class="g"></td><td class="dd">▾</td><td class="g"></td><td></td></tr>
+  </table></div>
+ </div>
+</div>
+</div>
+
+<div class="step">
+<h2><span class="n">2</span>Work out the difference</h2>
+<p>Subtract the delivered quantity from the total number of drums.</p>
+<div class="math">2 (total drums) − 1.050 (delivered) = <b>0.950</b></div>
+</div>
+
+<div class="step">
+<h2><span class="n">3</span>Split the schedule line</h2>
+<ol>
+ <li><span class="co">A</span> In the <b>first</b> row, type <b>0.950</b> in Order quantity and press <b>Enter</b>. Keep pressing Enter until 0.950 shows in all three columns (Order, Rounded, Confirmed).</li>
+ <li><span class="co">B</span> In the <b>next empty</b> row, type <b>1.050</b> in Order quantity and enter the <b>same date</b> as row 1.</li>
+ <li>Press <b>Enter</b> until 1.050 shows in all three columns.</li>
+</ol>
+<div class="sap">
+ <div class="top"><span>Sales Document Item</span><span class="f ro">70</span><span></span><span>Item Category</span><span class="f ro">ZTM2</span><span>SO: In charge custom</span>
+ <span>Material</span><span class="f ro" style="grid-column:span 2;width:110px">90002718</span><span style="grid-column:span 3">RS2-Non-Halo Organic Solids Recycle</span></div>
+ <div class="tabs"><span>Sales A</span><span>Sales B</span><span>Shipping</span><span>Billing Document</span><span>Conditions</span><span>Account assignment</span><span class="on">Schedule lines</span><span>Partners</span><span>Texts</span></div>
+ <div class="body">
+  <div class="hdr"><span style="color:#888">☐ Fixed date and qty</span><span></span><span></span><span>Order Quantity</span><span class="f ro" style="text-align:right">2</span><span class="f ro">Z17</span>
+  <span>Delivery time</span><span class="f">&nbsp;▾</span><span></span><span>Delivered qty</span><span class="f ro" style="text-align:right">1.050</span><span></span></div>
+  <div class="grp"><div class="gt">Quantities/Dates</div><table>
+  <tr><th></th><th>P</th><th>Delivery D...</th><th>Order quantity</th><th>Rounded qty</th><th>Confirmed Qty</th><th>S...</th><th>Delivery block</th><th>Delivered qty</th><th>Sc...</th></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td class="l">10/21/2026</td><td class="hl">0.950<span class="co">A</span></td><td class="g hl">0.950</td><td class="g hl">0.950</td><td class="g l">Z17</td><td class="dd">▾</td><td class="g">0.950</td><td class="l">ZN</td></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td class="l hl">10/21/2026</td><td class="hl">1.050<span class="co">B</span></td><td class="g hl">1.050</td><td class="g hl">1.050</td><td class="g l">Z17</td><td class="dd">▾</td><td class="g"></td><td class="l">ZN</td></tr>
+  <tr><td class="sel"></td><td class="p">D</td><td></td><td></td><td class="g"></td><td class="g"></td><td class="g"></td><td class="dd">▾</td><td class="g"></td><td></td></tr>
+  </table></div>
+ </div>
+</div>
+<p class="note">The two rows must add back up to the total: 0.950 + 1.050 = 2.</p>
+</div>
+
+<div class="step">
+<h2><span class="n">4</span>Deliver and correct the quantity</h2>
+<p>Click <b>Sales document → Deliver</b> at the top. On the delivery screen that opens, change <b>Deliv. Qty</b> to the total number of drums, <b>2</b>, and <b>Save</b>. The drum is now fully delivered.</p>
+<div class="sap">
+ <div class="menu"><span>Outbound Delivery</span><span>Edit</span><span>Goto</span><span>Extras</span><span>Environment</span><span>System</span></div>
+ <div class="top" style="grid-template-columns:auto 110px 1fr auto 110px 1fr"><span>Outbound deliv.</span><span class="f"></span><span></span><span>Document Date</span><span class="f ro">10/21/2026</span><span></span></div>
+ <div class="tabs"><span class="on">Item Overview</span><span>Picking</span><span>Loading</span><span>Transport</span><span>Status Overview</span><span>Goods Movement Data</span></div>
+ <div class="body"><div class="grp"><div class="gt">All Items</div><table>
+  <tr><th></th><th>Itm</th><th>Material</th><th>Deliv. Qty</th><th>Un</th><th>Description</th><th>ItCa</th></tr>
+  <tr><td class="sel"></td><td class="l">10</td><td class="l">90002718</td><td class="hl">2<span class="co">!</span></td><td class="g l">Z17</td><td class="g l" style="font-family:Tahoma,Arial,sans-serif">RS2-Non-Halo Organic Solids Recycle</td><td class="g l">ZTM2</td></tr>
+  <tr><td class="sel"></td><td></td><td></td><td></td><td class="g"></td><td class="g"></td><td class="g"></td></tr>
+ </table></div>
+ <p class="note" style="margin-top:6px">Deliv. Qty opens as 1.050. Overwrite it with <b>2</b>, then Save.</p></div>
+</div>
+</div>
+
+<div class="step">
+<div class="eyebrow" style="margin-bottom:6px">Easier cases: check these first</div>
+<div class="two">
+ <div class="box"><h3><span class="pill">Quick fix</span>Confirmed Qty is blank</h3><p>If the Confirmed Qty column is just missing the number, type it in (2) and deliver. No split needed.</p></div>
+ <div class="box"><h3><span class="pill">Quick fix</span>Future delivery date</h3><p>If the schedule line has a date in the future, change it to today's date and deliver.</p></div>
+</div>
+</div>
+</body></html>
