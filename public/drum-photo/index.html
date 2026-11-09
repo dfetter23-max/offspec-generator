@@ -69,6 +69,9 @@
   .addr{font-weight:700;color:var(--brand);word-break:break-all}
   html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
   button,.bigbtn,.chip{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  .officeline{text-align:center;color:var(--muted);font-size:15px;margin:4px 0 8px}
+  .officeline b{color:var(--ink)}
+  .linkbtn.inline{display:inline;margin:0;padding:6px 2px;font-size:15px}
   .install{display:none;max-width:640px;margin:12px auto 0;padding:0 16px}
   .install.show{display:block}
   .install .box{background:#fff8e1;border:2px solid #f0c24b;border-radius:14px;padding:14px;font-size:17px}
@@ -123,12 +126,20 @@
     <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
     <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
   </section>
+
+  <div class="officeline">Sending to <b id="officeName">—</b> · <button type="button" class="linkbtn inline" id="officeChange">Change office</button></div>
 </main>
 
 <div class="sendbar">
   <button id="send" class="send" disabled>Send to Office ✉</button>
   <div id="need" class="need"></div>
 </div>
+
+<dialog id="officePick">
+  <h2>Which office?</h2>
+  <p>Photos from this phone will go to that office. You only pick once.</p>
+  <div class="btns" id="officeBtns"></div>
+</dialog>
 
 <dialog id="done">
   <h2>Sent?</h2>
@@ -143,8 +154,11 @@
 <script src="zxing/reader.js"></script>
 <script>
 (() => {
-  // ===== The one office inbox every photo goes to. Change it here. =====
-  const OFFICE_EMAIL = "dan.fetter@tradebe.com";
+  // ===== Office inboxes. Each phone picks its office once (remembered on the phone). =====
+  const OFFICES = {
+    EC: { name: "East Chicago", email: "EC.ReceivingOffice@tradebe.com" },
+    TN: { name: "Millington",   email: "TN.ReceivingGroup@tradebe.com" }
+  };
 
   const ISSUES = ["INNER CONTAINERS", "POWDER", "PAINT CANS", "OTHER"];
   const MAX_PHOTOS = 5, MAX_SIDE = 1600, JPEG_Q = 0.82;
@@ -423,7 +437,8 @@
   }
 
   // ---------- send ----------
-  const office = () => OFFICE_EMAIL.trim();
+  const officeKey = () => { const k = load("dp_office", ""); return OFFICES[k] ? k : ""; };
+  const office = () => officeKey() ? OFFICES[officeKey()].email : "";
 
   // Copy the office address on the same tap so it can be pasted into "To" if the mail app leaves it blank.
   $("send").addEventListener("pointerdown", () => {
@@ -432,6 +447,7 @@
   });
 
   $("send").addEventListener("click", async () => {
+    if (!officeKey()) { $("officePick").showModal(); return; }
     if (!ready || ready.ver !== ver) return;
     const files = ready.files, subj = subject(), text = subj + "\n\n" + body();
     if (navigator.canShare && navigator.canShare({ files })) {
@@ -501,7 +517,19 @@
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   }
 
-  renderPhotos(); updateSend();
+  // ---------- office picker ----------
+  function showOffice() { $("officeName").textContent = officeKey() ? OFFICES[officeKey()].name + " office" : "— pick an office"; }
+  Object.keys(OFFICES).forEach(k => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.textContent = OFFICES[k].name;
+    b.onclick = () => { save("dp_office", k); showOffice(); $("officePick").close(); };
+    $("officeBtns").appendChild(b);
+  });
+  $("officePick").addEventListener("cancel", e => { if (!officeKey()) e.preventDefault(); });
+  $("officeChange").onclick = () => $("officePick").showModal();
+
+  renderPhotos(); updateSend(); showOffice();
+  if (!officeKey()) $("officePick").showModal();
 })();
 </script>
 </body>
