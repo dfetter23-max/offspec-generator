@@ -112,6 +112,9 @@
     <label for="drum">Drum #</label>
     <div class="drumbox" id="drumBox"><span class="dpre">D</span><input id="drum" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" spellcheck="false" placeholder="014775738" aria-label="Drum number digits"></div>
     <div class="status" id="scanStatus"></div>
+    <label for="load" style="margin-top:12px">Load #</label>
+    <div class="drumbox" id="loadBox"><input id="load" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="5 digits" style="padding-left:14px"></div>
+    <div class="status" id="loadStatus"></div>
   </section>
 
   <section class="card">
@@ -119,9 +122,6 @@
     <div id="issues" class="chips"></div>
     <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
     <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
-    <label for="load" style="margin-top:14px">Load # <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-    <div class="drumbox" id="loadBox"><input id="load" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="88213" style="padding-left:14px"></div>
-    <div class="status" id="loadStatus"></div>
   </section>
 </main>
 
@@ -319,6 +319,7 @@
     const m = [];
     if (!photos.length) m.push("a photo");
     if (!drumNo()) m.push("drum #");
+    if (loadNo().length !== 5) m.push("5-digit load #");
     if (!picked.size) m.push("an issue");
     if (picked.has("OTHER") && !val("note")) m.push("a note for OTHER");
     return m;
