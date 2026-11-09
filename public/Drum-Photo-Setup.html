@@ -21,12 +21,12 @@
   .sheet { width: 8.5in; height: 11in; margin: 0 auto 32px; background: #fff; overflow: hidden;
            box-shadow: 0 4px 24px rgba(0,0,0,.18); display: flex; flex-direction: column; }
 
-  .head { background: var(--navy); color: #fff; padding: 36px 56px; display: flex; align-items: center; gap: 24px; }
+  .head { background: var(--navy); color: #fff; padding: 30px 56px; display: flex; align-items: center; gap: 24px; }
   .head img { width: 96px; height: 96px; border-radius: 22px; background: #fff; }
   .head h1 { margin: 0; font-size: 52px; font-weight: 900; letter-spacing: -0.01em; line-height: 1; }
   .head p { margin: 6px 0 0; font-size: 21px; font-weight: 600; color: #d6e0ec; }
 
-  .setup { padding: 36px 56px 0; display: flex; gap: 40px; align-items: flex-start; }
+  .setup { padding: 30px 56px 0; display: flex; gap: 40px; align-items: flex-start; }
   .qr { width: 286px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
   .qr .frame { border: 3px solid var(--navy); border-radius: 18px; padding: 14px; background: #fff; }
   .qr .frame svg { display: block; width: 250px; height: 250px; }
@@ -42,7 +42,7 @@
   .step-t { font-size: 21px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
   .step-d { margin-top: 3px; font-size: 16px; line-height: 1.4; color: var(--text); }
 
-  .use { margin: 36px 56px 0; border-top: 3px solid var(--navy); padding-top: 24px; }
+  .use { margin: 26px 56px 0; border-top: 3px solid var(--navy); padding-top: 24px; }
   .use h2 { margin: 0 0 16px; font-size: 28px; font-weight: 900; color: var(--navy); }
   .tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
   .tile { background: var(--tile); border-radius: 14px; padding: 16px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -50,6 +50,13 @@
   .tile .n.done { color: var(--green); }
   .tile .t { font-size: 17px; font-weight: 800; line-height: 1.2; }
   .tile .d { font-size: 14px; line-height: 1.4; color: var(--text); }
+
+  .send { margin: 22px 56px 0; border: 3px solid var(--navy); border-radius: 16px; padding: 14px 22px; }
+  .send h2 { margin: 0 0 8px; font-size: 19px; font-weight: 900; color: var(--navy); }
+  .send .rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .send .office { display: flex; flex-direction: column; gap: 4px; }
+  .send .o { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .send .e { font-size: 17px; font-weight: 800; color: var(--ink); }
 
   @media print {
     body { background: #fff; }
@@ -106,6 +113,14 @@
       <div class="tile"><span class="n">3</span><span class="t">Tap the issue</span><span class="d">OTHER needs a short note.</span></div>
       <div class="tile"><span class="n">4</span><span class="t">Send to Office</span><span class="d">Pick <b>Outlook</b>. Tap <b>To</b>, then <b>Paste</b>. Tap Send.</span></div>
       <div class="tile"><span class="n done">5</span><span class="t">Next drum</span><span class="d">Tap <b>Next drum</b>, or <b>Clear</b> at the top to start over.</span></div>
+    </div>
+  </div>
+
+  <div class="send">
+    <h2>Send photos to your office</h2>
+    <div class="rows">
+      <div class="office"><span class="o">East Chicago</span><span class="e">EC.ReceivingOffice@tradebe.com</span></div>
+      <div class="office"><span class="o">Millington</span><span class="e">TN.ReceivingGroup@tradebe.com</span></div>
     </div>
   </div>
 </div>
