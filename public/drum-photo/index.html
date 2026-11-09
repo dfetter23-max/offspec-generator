@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Drum Photo</title>
+<meta name="theme-color" content="#1f3a5f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Drum Photo">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<style>
+  :root{
+    --bg:#eef1f5; --card:#fff; --ink:#111; --muted:#5b6573; --line:#c9d1dc;
+    --brand:#1f3a5f; --accent:#0a7c3e; --warn:#b42318; --ok:#0a7c3e; --chip:#e7ecf3; --chipOn:#1f3a5f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  header{position:sticky;top:0;z-index:5;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top))}
+  header h1{margin:0;font-size:22px}
+  header button{background:none;border:0;color:#fff;font-size:28px;padding:4px 8px;cursor:pointer}
+  main{max-width:640px;margin:0 auto;padding:12px 16px 130px}
+  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .lbl,label{display:block;font-weight:700;font-size:17px;margin:4px 0 6px}
+  input[type=text],input[type=email],textarea{width:100%;font-size:24px;padding:12px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  textarea{font-size:20px;resize:vertical}
+  input:focus,textarea:focus{outline:none;border-color:var(--brand)}
+  input.auto{border-color:var(--ok);background:#f0faf4}
+  .step{font-size:15px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+  .bigbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:84px;background:var(--brand);color:#fff;border-radius:12px;font-size:25px;font-weight:700;cursor:pointer;user-select:none;text-align:center;padding:8px}
+  .bigbtn.more{min-height:60px;font-size:21px;background:#3c5a80}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+  .photos:empty{display:none}
+  .ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#ddd}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph button{position:absolute;top:6px;right:6px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:22px;cursor:pointer}
+  .tag{position:absolute;left:6px;bottom:6px;background:var(--brand);color:#fff;font-size:13px;font-weight:800;padding:3px 8px;border-radius:6px;letter-spacing:.05em}
+  .hint{color:var(--muted);font-size:15px;margin-top:8px;text-align:center}
+  .linkbtn{background:none;border:0;color:var(--brand);text-decoration:underline;font-size:16px;padding:10px;cursor:pointer;display:block;margin:4px auto 0}
+  .status{font-size:16px;margin-top:6px;min-height:1.3em;font-weight:600}
+  .status.ok{color:var(--ok)} .status.bad{color:var(--warn)} .status.wait{color:var(--muted)}
+  .chips{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chip{border:2px solid var(--line);background:var(--chip);color:var(--ink);border-radius:12px;padding:18px 10px;font-size:19px;font-weight:800;cursor:pointer;letter-spacing:.02em}
+  .chip.on{background:var(--chipOn);border-color:var(--chipOn);color:#fff}
+  .sendbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+  .send{display:block;width:100%;max-width:640px;margin:0 auto;min-height:68px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:26px;font-weight:800;cursor:pointer}
+  .send:disabled{background:#9aa4b1;cursor:default}
+  .need{max-width:640px;margin:6px auto 0;text-align:center;color:var(--muted);font-size:15px;min-height:1.2em}
+  .err{color:var(--warn)}
+  dialog{border:0;border-radius:16px;padding:20px;width:min(92vw,520px)}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  dialog h2{margin:0 0 8px}
+  dialog p{color:var(--muted);font-size:15px;margin:4px 0 12px}
+  .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .btn{min-height:58px;border:0;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff}
+  .btn.alt{background:#e2e7ee;color:var(--ink)}
+  .btn.go{background:var(--accent)}
+  .addr{font-weight:700;color:var(--brand);word-break:break-all}
+  html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  button,.bigbtn,.chip{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  .install{display:none;max-width:640px;margin:12px auto 0;padding:0 16px}
+  .install.show{display:block}
+  .install .box{background:#fff8e1;border:2px solid #f0c24b;border-radius:14px;padding:14px;font-size:17px}
+  .install .box b{display:block;font-size:19px;margin-bottom:6px}
+  .install .row{display:flex;gap:10px;margin-top:10px}
+  .install .row button{flex:1;min-height:52px;border:0;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer}
+  .install .yes{background:var(--brand);color:#fff}
+  .install .no{background:#e2e7ee;color:var(--ink)}
+  .share-ico{display:inline-block;border:2px solid currentColor;border-radius:4px;padding:0 4px;font-weight:800}
+</style>
+</head>
+<body>
+<header>
+  <h1>Drum Photo</h1>
+</header>
+
+<div class="install" id="install">
+  <div class="box">
+    <b>Put Drum Photo on the home screen</b>
+    <span id="installText"></span>
+    <div class="row">
+      <button type="button" class="yes" id="installYes">Install</button>
+      <button type="button" class="no" id="installNo">Not now</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section class="card">
+    <div class="step" id="stepText">Step 1 — Label photo</div>
+    <div id="photos" class="photos"></div>
+    <label class="bigbtn" id="camBtn"><span id="camText">📷 Photo of Drum Label</span>
+      <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+    </label>
+    <div class="hint" id="photoHint">Get the whole barcode in the picture</div>
+    <button type="button" class="linkbtn" id="skipLabel">No label / can't get to it</button>
+  </section>
+
+  <section class="card">
+    <label for="drum">Drum #</label>
+    <input id="drum" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="D014775738">
+    <div class="status" id="scanStatus"></div>
+    <label for="manifest" style="margin-top:12px">Manifest # <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <input id="manifest" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="027939515JJK">
+  </section>
+
+  <section class="card">
+    <div class="lbl">Issue — tap all that apply</div>
+    <div id="issues" class="chips"></div>
+    <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
+  </section>
+</main>
+
+<div class="sendbar">
+  <button id="send" class="send" disabled>Send to Office ✉</button>
+  <div id="need" class="need"></div>
+</div>
+
+<dialog id="done">
+  <h2>Sent?</h2>
+  <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
+  <div class="btns">
+    <button class="btn go" id="nextDrum">Next drum — same manifest</button>
+    <button class="btn" id="newLoad">New load</button>
+    <button class="btn alt" id="goBack">Back — didn't send</button>
+  </div>
+</dialog>
+
+<!-- Barcode reader (ZXing compiled to WebAssembly, zxing-wasm 3.1.6, MIT). Bundled with the app so it works offline. -->
+<script src="zxing/reader.js"></script>
+<script>
+(() => {
+  // ===== The one office inbox every photo goes to. Change it here. =====
+  const OFFICE_EMAIL = "dan.fetter@tradebe.com";
+
+  const ISSUES = ["INNER CONTAINERS", "POWDER", "PAINT CANS", "OTHER"];
+  const MAX_PHOTOS = 5, MAX_SIDE = 1600, JPEG_Q = 0.82;
+  const DRUM_RE = /^D\d{9}$/;
+
+  const $ = id => document.getElementById(id);
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+
+  let photos = [];           // {file, url, time, label}
+  let skipLabel = false;
+  let drumAuto = false;      // drum # came from barcode and hasn't been edited
+  const picked = new Set();
+  let ver = 0, ready = null, timer = null, scanSeq = 0;
+
+  const hasLabel = () => photos.some(p => p.label);
+  const wantLabel = () => !hasLabel() && !skipLabel;
+
+  // ---------- barcode reading ----------
+  // Warm up the reader so the first scan is quick.
+  try {
+    if (window.ZXingWASM && ZXingWASM.prepareZXingModule) ZXingWASM.prepareZXingModule({
+      overrides: { locateFile: (path, prefix) => path.endsWith(".wasm") ? new URL("zxing/zxing_reader.wasm", location.href).href : prefix + path },
+      fireImmediately: true
+    });
+  } catch (e) {}
+
+  function pickDrum(texts) {
+    const clean = texts.map(t => (t || "").trim().toUpperCase());
+    return clean.find(t => DRUM_RE.test(t)) || null;
+  }
+
+  async function imageDataFrom(file, maxSide) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await loadImg(url);
+      let w = img.naturalWidth, h = img.naturalHeight;
+      const s = maxSide ? Math.min(1, maxSide / Math.max(w, h)) : 1;
+      w = Math.round(w * s); h = Math.round(h * s);
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      const ctx = c.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, w, h);
+      return { canvas: c, data: ctx.getImageData(0, 0, w, h) };
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  async function readDrum(file) {
+    // 1) Phone's built-in barcode reader if it has one (most Android phones)
+    if ("BarcodeDetector" in window) {
+      try {
+        const det = new BarcodeDetector({ formats: ["code_39", "code_128"] });
+        const { canvas } = await imageDataFrom(file, 2400);
+        const found = pickDrum((await det.detect(canvas)).map(b => b.rawValue));
+        if (found) return found;
+      } catch (e) {}
+    }
+    // 2) ZXing — try a reduced size first (fast), then full resolution
+    if (!window.ZXingWASM) throw new Error("reader not loaded");
+    const opts = { formats: ["Code39", "Code128"], tryHarder: true, tryRotate: true, maxNumberOfSymbols: 4 };
+    for (const side of [2400, 0]) {
+      const { data } = await imageDataFrom(file, side);
+      const found = pickDrum((await ZXingWASM.readBarcodes(data, opts)).map(r => r.text));
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function setStatus(text, cls) { const s = $("scanStatus"); s.textContent = text; s.className = "status " + (cls || ""); }
+
+  async function scanLabel(p) {
+    const seq = ++scanSeq;
+    setStatus("Reading barcode…", "wait");
+    let drum = null, failed = false;
+    try { drum = await readDrum(p.file); } catch (e) { failed = true; }
+    if (seq !== scanSeq || !photos.includes(p)) return;
+    if (drum) {
+      if (!val("drum") || drumAuto) { $("drum").value = drum; drumAuto = true; $("drum").classList.add("auto"); }
+      setStatus("✓ Read from barcode", "ok");
+    } else {
+      setStatus(failed ? "Barcode reader didn't load — type the drum #" : "Couldn't read the barcode — retake the label photo or type the drum #", "bad");
+    }
+    changed();
+  }
+
+  // ---------- issue chips ----------
+  ISSUES.forEach(txt => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.textContent = txt;
+    b.onclick = () => { picked.has(txt) ? picked.delete(txt) : picked.add(txt); b.classList.toggle("on"); changed(); };
+    $("issues").appendChild(b);
+  });
+
+  // ---------- photos ----------
+  $("cam").addEventListener("change", e => {
+    for (const f of e.target.files) {
+      if (photos.length >= MAX_PHOTOS) break;
+      if (!f.type.startsWith("image/")) continue;
+      const p = { file: f, url: URL.createObjectURL(f), time: Date.now(), label: wantLabel() };
+      if (p.label) photos.unshift(p); else photos.push(p);
+      if (p.label) scanLabel(p);
+    }
+    e.target.value = "";
+    renderPhotos(); changed();
+  });
+
+  $("skipLabel").onclick = () => { skipLabel = true; setStatus("", ""); renderPhotos(); $("drum").focus(); };
+
+  function renderPhotos() {
+    const box = $("photos"); box.innerHTML = "";
+    photos.forEach((p, i) => {
+      const d = document.createElement("div"); d.className = "ph";
+      d.innerHTML = `<img alt="Photo ${i + 1}">${p.label ? '<span class="tag">LABEL</span>' : ""}<button type="button" aria-label="Remove photo">×</button>`;
+      d.querySelector("img").src = p.url;
+      d.querySelector("button").onclick = () => {
+        URL.revokeObjectURL(p.url); photos.splice(photos.indexOf(p), 1);
+        if (p.label) { scanSeq++; setStatus("", ""); }
+        renderPhotos(); changed();
+      };
+      box.appendChild(d);
+    });
+    const label = wantLabel();
+    $("stepText").textContent = label ? "Step 1 — Label photo" : "Step 2 — Photos of the drum";
+    $("camText").textContent = label ? "📷 Photo of Drum Label" : "📷 Add Drum Photo";
+    $("camBtn").classList.toggle("more", !label && photos.length > 1);
+    $("camBtn").style.display = photos.length >= MAX_PHOTOS ? "none" : "";
+    $("skipLabel").style.display = label ? "" : "none";
+    const others = photos.filter(p => !p.label).length;
+    $("photoHint").textContent = label ? "Get the whole barcode in the picture"
+      : photos.length >= MAX_PHOTOS ? `${MAX_PHOTOS} photos max`
+      : others ? `${others} drum photo${others > 1 ? "s" : ""} — add more or fill in below`
+      : "Now show the problem — powder, inner containers, etc.";
+  }
+
+  // ---------- fields ----------
+  function upper(e) { const s = e.target.selectionStart; e.target.value = e.target.value.toUpperCase().replace(/\s+/g, ""); try { e.target.setSelectionRange(s, s); } catch (x) {} }
+  $("manifest").addEventListener("input", e => { upper(e); changed(); });
+  $("drum").addEventListener("input", e => {
+    upper(e); drumAuto = false; $("drum").classList.remove("auto");
+    if ($("scanStatus").classList.contains("ok")) setStatus("", "");
+    changed();
+  });
+  $("drum").addEventListener("blur", () => { const v = val("drum"); if (/^\d{9}$/.test(v)) { $("drum").value = "D" + v; changed(); } });
+  $("note").addEventListener("input", changed);
+
+  const val = id => $(id).value.trim();
+
+  function missing() {
+    const m = [];
+    if (!photos.length) m.push("a photo");
+    if (!val("drum") && !val("manifest")) m.push("drum #");
+    if (!picked.size) m.push("an issue");
+    if (picked.has("OTHER") && !val("note")) m.push("a note for OTHER");
+    return m;
+  }
+
+  function changed() {
+    ver++; ready = null; clearTimeout(timer);
+    $("noteReq").textContent = picked.has("OTHER") ? "(required for OTHER)" : "(optional)";
+    updateSend();
+    if (!missing().length) timer = setTimeout(build, 350);
+  }
+
+  function updateSend() {
+    const m = missing(), btn = $("send"), need = $("need");
+    need.classList.remove("err");
+    if (m.length) { btn.disabled = true; btn.textContent = "Send to Office ✉"; need.textContent = "Needs " + m.join(", "); }
+    else if (!ready || ready.ver !== ver) { btn.disabled = true; btn.textContent = "Preparing…"; need.textContent = ""; }
+    else { btn.disabled = false; btn.textContent = "Send to Office ✉"; need.textContent = ""; }
+  }
+
+  // ---------- message text ----------
+  function stamp() {
+    const t = photos.length ? Math.min(...photos.map(p => p.time)) : Date.now();
+    return new Date(t).toLocaleString([], { month: "2-digit", day: "2-digit", year: "2-digit", hour: "numeric", minute: "2-digit" });
+  }
+  const issueList = () => ISSUES.filter(i => picked.has(i)).join(", ");
+  function subject() {
+    const parts = ["Drum Photo"];
+    if (val("drum")) parts.push(val("drum"));
+    if (val("manifest")) parts.push("Manifest " + val("manifest"));
+    parts.push(issueList());
+    return parts.join(" – ");
+  }
+  function body() {
+    const L = [];
+    L.push("Drum #: " + (val("drum") || "—"));
+    if (val("manifest")) L.push("Manifest: " + val("manifest"));
+    L.push("Issue: " + issueList());
+    if (val("note")) L.push("Note: " + val("note"));
+    L.push("Taken: " + stamp());
+    L.push("", `${photos.length} photo${photos.length > 1 ? "s" : ""} attached.`);
+    return L.join("\n");
+  }
+  function caption() {
+    const a = [];
+    if (val("drum")) a.push(val("drum"));
+    if (val("manifest")) a.push("Manifest " + val("manifest"));
+    a.push(issueList());
+    if (val("note")) a.push(val("note").slice(0, 80));
+    a.push(stamp());
+    return a.join("  •  ");
+  }
+  function fileBase() {
+    const clean = s => s.replace(/[^A-Za-z0-9-]/g, "");
+    return clean(val("drum")) || ("M" + (clean(val("manifest")) || "NA"));
+  }
+
+  // ---------- image processing (shrink + caption bar under photo) ----------
+  function loadImg(url) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  }
+  function wrap(ctx, text, maxW) {
+    const words = text.split(" "), lines = []; let cur = "";
+    for (const w of words) {
+      const t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  async function processImage(p, cap, name) {
+    const img = await loadImg(p.url);
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const s = Math.min(1, MAX_SIDE / Math.max(w, h));
+    w = Math.round(w * s); h = Math.round(h * s);
+    const fs = Math.max(20, Math.round(w / 38)), pad = Math.round(fs * 0.6);
+    const c = document.createElement("canvas"), ctx = c.getContext("2d");
+    ctx.font = `bold ${fs}px system-ui, sans-serif`;
+    const lines = wrap(ctx, cap, w - pad * 2);
+    const barH = lines.length * fs * 1.3 + pad * 2;
+    c.width = w; c.height = Math.round(h + barH);
+    ctx.drawImage(img, 0, 0, w, h);
+    ctx.fillStyle = "#111"; ctx.fillRect(0, h, w, barH);
+    ctx.fillStyle = "#fff"; ctx.font = `bold ${fs}px system-ui, sans-serif`; ctx.textBaseline = "top";
+    lines.forEach((ln, i) => ctx.fillText(ln, pad, h + pad + i * fs * 1.3));
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", JPEG_Q));
+    return new File([blob], name, { type: "image/jpeg" });
+  }
+  async function build() {
+    const v = ver, cap = caption(), base = fileBase();
+    try {
+      const files = []; let n = 1;
+      for (const p of photos) {
+        const name = p.label ? `${base}_label.jpg` : `${base}_${n++}.jpg`;
+        files.push(await processImage(p, cap, name));
+      }
+      if (v === ver) { ready = { ver: v, files }; updateSend(); }
+    } catch (e) {
+      if (v === ver) { $("need").textContent = "Couldn't read a photo — remove it and retake."; $("need").classList.add("err"); }
+    }
+  }
+
+  // ---------- send ----------
+  const office = () => OFFICE_EMAIL.trim();
+
+  // Copy the office address on the same tap so it can be pasted into "To" if the mail app leaves it blank.
+  $("send").addEventListener("pointerdown", () => {
+    const a = office();
+    if (a && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(a).catch(() => {});
+  });
+
+  $("send").addEventListener("click", async () => {
+    if (!ready || ready.ver !== ver) return;
+    const files = ready.files, subj = subject(), text = subj + "\n\n" + body();
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files, title: subj, text });
+        showDone();
+      } catch (e) {
+        if (e.name !== "AbortError") { $("need").textContent = "Couldn't open sharing: " + e.message; $("need").classList.add("err"); }
+      }
+    } else {
+      // Fallback (desktop / older browsers): save photos, then open a pre-addressed email to attach them to.
+      files.forEach(f => {
+        const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      });
+      location.href = `mailto:${encodeURIComponent(office())}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body() + "\n\n(Attach the saved photos.)")}`;
+      showDone();
+    }
+  });
+
+  function showDone() { $("doneAddr").textContent = office(); $("done").showModal(); }
+  function clearDrum() {
+    photos.forEach(p => URL.revokeObjectURL(p.url)); photos = [];
+    skipLabel = false; drumAuto = false; scanSeq++;
+    picked.clear(); document.querySelectorAll(".chip.on").forEach(c => c.classList.remove("on"));
+    $("drum").value = ""; $("drum").classList.remove("auto"); $("note").value = ""; setStatus("", "");
+    renderPhotos(); changed(); window.scrollTo(0, 0);
+  }
+  $("nextDrum").onclick = () => { $("done").close(); clearDrum(); };
+  $("newLoad").onclick = () => { $("done").close(); $("manifest").value = ""; clearDrum(); };
+  $("goBack").onclick = () => $("done").close();
+
+  // ---------- app install ----------
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let deferredPrompt = null;
+  const dismissed = () => { const t = +load("dp_install_dismissed", 0); return Date.now() - t < 3 * 24 * 3600 * 1000; };
+  function showInstall(text, canPrompt) {
+    if (standalone || dismissed()) return;
+    $("installText").innerHTML = text;
+    $("installYes").style.display = canPrompt ? "" : "none";
+    $("install").classList.add("show");
+  }
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); deferredPrompt = e;
+    showInstall("Opens like an app — one tap from the home screen.", true);
+  });
+  $("installYes").onclick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch (e) {}
+    deferredPrompt = null; $("install").classList.remove("show");
+  };
+  $("installNo").onclick = () => { save("dp_install_dismissed", Date.now()); $("install").classList.remove("show"); };
+  window.addEventListener("appinstalled", () => $("install").classList.remove("show"));
+  if (isIOS && !standalone) {
+    showInstall('In Safari, tap the Share button <span class="share-ico">⬆</span> at the bottom, then <b style="display:inline;font-size:inherit">Add to Home Screen</b>.', false);
+  }
+
+  // ---------- offline support ----------
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+
+  renderPhotos(); updateSend();
+})();
+</script>
+</body>
+</html>
