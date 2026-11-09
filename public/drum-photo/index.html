@@ -120,7 +120,7 @@
     <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
     <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
     <label for="load" style="margin-top:14px">Load # <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-    <div class="drumbox" id="loadBox"><span class="dpre">L0000</span><input id="load" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="88213" aria-label="Load number last 5 digits"></div>
+    <div class="drumbox" id="loadBox"><input id="load" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="88213" style="padding-left:14px"></div>
     <div class="status" id="loadStatus"></div>
   </section>
 </main>
@@ -295,8 +295,8 @@
   });
   $("drum").addEventListener("blur", () => document.body.classList.remove("typing"));
 
-  // Load # — same behavior as the drum #: fixed L0000, number pad, closes itself at 5 digits.
-  const loadNo = () => { const d = $("load").value.replace(/\D/g, ""); return d ? "L" + d.padStart(9, "0") : ""; };
+  // Load # — number pad, closes itself at 5 digits.
+  const loadNo = () => $("load").value.replace(/\D/g, "");
   $("load").addEventListener("input", e => {
     const el = e.target, digits = el.value.replace(/\D/g, "").slice(0, 5);
     if (el.value !== digits) el.value = digits;
