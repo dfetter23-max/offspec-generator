@@ -105,8 +105,6 @@
     <label for="drum">Drum #</label>
     <input id="drum" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="D014775738">
     <div class="status" id="scanStatus"></div>
-    <label for="manifest" style="margin-top:12px">Manifest # <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
-    <input id="manifest" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="027939515JJK">
   </section>
 
   <section class="card">
@@ -126,8 +124,7 @@
   <h2>Sent?</h2>
   <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
   <div class="btns">
-    <button class="btn go" id="nextDrum">Next drum — same manifest</button>
-    <button class="btn" id="newLoad">New load</button>
+    <button class="btn go" id="nextDrum">Next drum</button>
     <button class="btn alt" id="goBack">Back — didn't send</button>
   </div>
 </dialog>
@@ -273,7 +270,6 @@
 
   // ---------- fields ----------
   function upper(e) { const s = e.target.selectionStart; e.target.value = e.target.value.toUpperCase().replace(/\s+/g, ""); try { e.target.setSelectionRange(s, s); } catch (x) {} }
-  $("manifest").addEventListener("input", e => { upper(e); changed(); });
   $("drum").addEventListener("input", e => {
     upper(e); drumAuto = false; $("drum").classList.remove("auto");
     if ($("scanStatus").classList.contains("ok")) setStatus("", "");
@@ -287,7 +283,7 @@
   function missing() {
     const m = [];
     if (!photos.length) m.push("a photo");
-    if (!val("drum") && !val("manifest")) m.push("drum #");
+    if (!val("drum")) m.push("drum #");
     if (!picked.size) m.push("an issue");
     if (picked.has("OTHER") && !val("note")) m.push("a note for OTHER");
     return m;
@@ -317,14 +313,12 @@
   function subject() {
     const parts = ["Drum Photo"];
     if (val("drum")) parts.push(val("drum"));
-    if (val("manifest")) parts.push("Manifest " + val("manifest"));
     parts.push(issueList());
     return parts.join(" – ");
   }
   function body() {
     const L = [];
     L.push("Drum #: " + (val("drum") || "—"));
-    if (val("manifest")) L.push("Manifest: " + val("manifest"));
     L.push("Issue: " + issueList());
     if (val("note")) L.push("Note: " + val("note"));
     L.push("Taken: " + stamp());
@@ -334,7 +328,6 @@
   function caption() {
     const a = [];
     if (val("drum")) a.push(val("drum"));
-    if (val("manifest")) a.push("Manifest " + val("manifest"));
     a.push(issueList());
     if (val("note")) a.push(val("note").slice(0, 80));
     a.push(stamp());
@@ -342,7 +335,7 @@
   }
   function fileBase() {
     const clean = s => s.replace(/[^A-Za-z0-9-]/g, "");
-    return clean(val("drum")) || ("M" + (clean(val("manifest")) || "NA"));
+    return clean(val("drum")) || "drum";
   }
 
   // ---------- image processing (shrink + caption bar under photo) ----------
@@ -429,7 +422,6 @@
     renderPhotos(); changed(); window.scrollTo(0, 0);
   }
   $("nextDrum").onclick = () => { $("done").close(); clearDrum(); };
-  $("newLoad").onclick = () => { $("done").close(); $("manifest").value = ""; clearDrum(); };
   $("goBack").onclick = () => $("done").close();
   $("clearBtn").onclick = () => {
     const hasWork = photos.length || val("drum") || picked.size || val("note");
