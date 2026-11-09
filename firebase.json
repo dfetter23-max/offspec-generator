@@ -46,11 +46,6 @@
     ],
     "redirects": [
       {
-        "source": "/drum-photo",
-        "destination": "/drum-photo/",
-        "type": 301
-      },
-      {
         "source": "/",
         "destination": "/dashboard.html",
         "type": 302
