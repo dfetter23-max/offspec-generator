@@ -29,7 +29,13 @@
   input[type=text],input[type=email],textarea{width:100%;font-size:24px;padding:12px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
   textarea{font-size:20px;resize:vertical}
   input:focus,textarea:focus{outline:none;border-color:var(--brand)}
-  input.auto{border-color:var(--ok);background:#f0faf4}
+  .drumbox{display:flex;align-items:center;border:2px solid var(--line);border-radius:10px;background:#fff}
+  .drumbox:focus-within{border-color:var(--brand)}
+  .drumbox.auto{border-color:var(--ok);background:#f0faf4}
+  .dpre{font-size:30px;font-weight:900;color:var(--brand);padding:0 2px 0 14px;line-height:1}
+  .drumbox input[type=text]{border:0;background:transparent;font-size:30px;font-weight:700;letter-spacing:.06em;padding:12px 12px 12px 2px;min-width:0}
+  .drumbox input:focus{border:0}
+  .count{color:var(--muted);font-weight:600}
   .step{font-size:15px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
   .bigbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:84px;background:var(--brand);color:#fff;border-radius:12px;font-size:25px;font-weight:700;cursor:pointer;user-select:none;text-align:center;padding:8px}
   .bigbtn.more{min-height:60px;font-size:21px;background:#3c5a80}
@@ -48,6 +54,7 @@
   .chip.on{background:var(--chipOn);border-color:var(--chipOn);color:#fff}
   .sendbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
   .send{display:block;width:100%;max-width:640px;margin:0 auto;min-height:68px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:26px;font-weight:800;cursor:pointer}
+  body.typing .sendbar{display:none}
   .send:disabled{background:#9aa4b1;cursor:default}
   .need{max-width:640px;margin:6px auto 0;text-align:center;color:var(--muted);font-size:15px;min-height:1.2em}
   .err{color:var(--warn)}
@@ -103,7 +110,7 @@
 
   <section class="card">
     <label for="drum">Drum #</label>
-    <input id="drum" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="D014775738">
+    <div class="drumbox" id="drumBox"><span class="dpre">D</span><input id="drum" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" spellcheck="false" placeholder="014775738" aria-label="Drum number digits"></div>
     <div class="status" id="scanStatus"></div>
   </section>
 
@@ -211,7 +218,7 @@
     try { drum = await readDrum(p.file); } catch (e) { failed = true; }
     if (seq !== scanSeq || !photos.includes(p)) return;
     if (drum) {
-      if (!val("drum") || drumAuto) { $("drum").value = drum; drumAuto = true; $("drum").classList.add("auto"); }
+      if (!val("drum") || drumAuto) { $("drum").value = drum.slice(1); drumAuto = true; $("drumBox").classList.add("auto"); }
       setStatus("✓ Read from barcode", "ok");
     } else {
       setStatus(failed ? "Barcode reader didn't load — type the drum #" : "Couldn't read the barcode — retake the label photo or type the drum #", "bad");
@@ -271,19 +278,28 @@
   // ---------- fields ----------
   function upper(e) { const s = e.target.selectionStart; e.target.value = e.target.value.toUpperCase().replace(/\s+/g, ""); try { e.target.setSelectionRange(s, s); } catch (x) {} }
   $("drum").addEventListener("input", e => {
-    upper(e); drumAuto = false; $("drum").classList.remove("auto");
-    if ($("scanStatus").classList.contains("ok")) setStatus("", "");
+    const el = e.target, digits = el.value.replace(/\D/g, "").slice(0, 9);
+    if (el.value !== digits) el.value = digits;
+    drumAuto = false; $("drumBox").classList.remove("auto");
+    if (digits.length === 9) { setStatus("✓ 9 digits", "ok"); el.blur(); }
+    else setStatus(digits.length ? `${digits.length} of 9 digits` : "", "wait");
     changed();
   });
-  $("drum").addEventListener("blur", () => { const v = val("drum"); if (/^\d{9}$/.test(v)) { $("drum").value = "D" + v; changed(); } });
+  // Keep the drum field in view above the number pad, and keep the Send bar from covering it.
+  $("drum").addEventListener("focus", () => {
+    document.body.classList.add("typing");
+    setTimeout(() => $("drumBox").scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+  });
+  $("drum").addEventListener("blur", () => document.body.classList.remove("typing"));
   $("note").addEventListener("input", changed);
 
   const val = id => $(id).value.trim();
+  const drumNo = () => { const d = $("drum").value.replace(/\D/g, ""); return d ? "D" + d : ""; };
 
   function missing() {
     const m = [];
     if (!photos.length) m.push("a photo");
-    if (!val("drum")) m.push("drum #");
+    if (!drumNo()) m.push("drum #");
     if (!picked.size) m.push("an issue");
     if (picked.has("OTHER") && !val("note")) m.push("a note for OTHER");
     return m;
@@ -312,13 +328,13 @@
   const issueList = () => ISSUES.filter(i => picked.has(i)).join(", ");
   function subject() {
     const parts = ["Drum Photo"];
-    if (val("drum")) parts.push(val("drum"));
+    if (drumNo()) parts.push(drumNo());
     parts.push(issueList());
     return parts.join(" – ");
   }
   function body() {
     const L = [];
-    L.push("Drum #: " + (val("drum") || "—"));
+    L.push("Drum #: " + (drumNo() || "—"));
     L.push("Issue: " + issueList());
     if (val("note")) L.push("Note: " + val("note"));
     L.push("Taken: " + stamp());
@@ -327,7 +343,7 @@
   }
   function caption() {
     const a = [];
-    if (val("drum")) a.push(val("drum"));
+    if (drumNo()) a.push(drumNo());
     a.push(issueList());
     if (val("note")) a.push(val("note").slice(0, 80));
     a.push(stamp());
@@ -335,7 +351,7 @@
   }
   function fileBase() {
     const clean = s => s.replace(/[^A-Za-z0-9-]/g, "");
-    return clean(val("drum")) || "drum";
+    return clean(drumNo()) || "drum";
   }
 
   // ---------- image processing (shrink + caption bar under photo) ----------
@@ -418,7 +434,7 @@
     photos.forEach(p => URL.revokeObjectURL(p.url)); photos = [];
     skipLabel = false; drumAuto = false; scanSeq++;
     picked.clear(); document.querySelectorAll(".chip.on").forEach(c => c.classList.remove("on"));
-    $("drum").value = ""; $("drum").classList.remove("auto"); $("note").value = ""; setStatus("", "");
+    $("drum").value = ""; $("drumBox").classList.remove("auto"); $("note").value = ""; setStatus("", "");
     renderPhotos(); changed(); window.scrollTo(0, 0);
   }
   $("nextDrum").onclick = () => { $("done").close(); clearDrum(); };
