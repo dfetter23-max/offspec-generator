@@ -119,6 +119,9 @@
     <div id="issues" class="chips"></div>
     <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
     <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
+    <label for="load" style="margin-top:14px">Load # <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <div class="drumbox" id="loadBox"><span class="dpre">L0000</span><input id="load" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="88213" aria-label="Load number last 5 digits"></div>
+    <div class="status" id="loadStatus"></div>
   </section>
 </main>
 
@@ -291,6 +294,22 @@
     setTimeout(() => $("drumBox").scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   });
   $("drum").addEventListener("blur", () => document.body.classList.remove("typing"));
+
+  // Load # — same behavior as the drum #: fixed L0000, number pad, closes itself at 5 digits.
+  const loadNo = () => { const d = $("load").value.replace(/\D/g, ""); return d ? "L" + d.padStart(9, "0") : ""; };
+  $("load").addEventListener("input", e => {
+    const el = e.target, digits = el.value.replace(/\D/g, "").slice(0, 5);
+    if (el.value !== digits) el.value = digits;
+    const st = $("loadStatus");
+    if (digits.length === 5) { st.textContent = "✓ 5 digits"; st.className = "status ok"; el.blur(); }
+    else { st.textContent = digits.length ? `${digits.length} of 5 digits` : ""; st.className = "status wait"; }
+    changed();
+  });
+  $("load").addEventListener("focus", () => {
+    document.body.classList.add("typing");
+    setTimeout(() => $("loadBox").scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+  });
+  $("load").addEventListener("blur", () => document.body.classList.remove("typing"));
   $("note").addEventListener("input", changed);
 
   const val = id => $(id).value.trim();
@@ -329,12 +348,14 @@
   function subject() {
     const parts = ["Drum Photo"];
     if (drumNo()) parts.push(drumNo());
+    if (loadNo()) parts.push("Load " + loadNo());
     parts.push(issueList());
     return parts.join(" – ");
   }
   function body() {
     const L = [];
     L.push("Drum #: " + (drumNo() || "—"));
+    if (loadNo()) L.push("Load #: " + loadNo());
     L.push("Issue: " + issueList());
     if (val("note")) L.push("Note: " + val("note"));
     L.push("Taken: " + stamp());
@@ -344,6 +365,7 @@
   function caption() {
     const a = [];
     if (drumNo()) a.push(drumNo());
+    if (loadNo()) a.push("Load " + loadNo());
     a.push(issueList());
     if (val("note")) a.push(val("note").slice(0, 80));
     a.push(stamp());
@@ -440,8 +462,9 @@
   $("nextDrum").onclick = () => { $("done").close(); clearDrum(); };
   $("goBack").onclick = () => $("done").close();
   $("clearBtn").onclick = () => {
-    const hasWork = photos.length || val("drum") || picked.size || val("note");
-    if (hasWork && !confirm("Clear this drum and start over?")) return;
+    const hasWork = photos.length || val("drum") || picked.size || val("note") || val("load");
+    if (hasWork && !confirm("Clear everything and start over?")) return;
+    $("load").value = ""; $("loadStatus").textContent = "";
     clearDrum();
   };
 
