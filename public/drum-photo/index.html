@@ -71,6 +71,13 @@
   button,.bigbtn,.chip{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   .officeline{text-align:center;color:var(--muted);font-size:15px;margin:4px 0 8px}
   .officeline b{color:var(--ink)}
+  .homewrap{text-align:center;margin:6px 0 10px}
+  .homewrap[hidden]{display:none}
+  .homebtn{border:2px solid var(--brand);background:#fff;color:var(--brand);font-size:19px;font-weight:800;border-radius:12px;padding:14px 22px;min-height:56px;cursor:pointer}
+  ol.howto{margin:8px 0 0;padding-left:26px;font-size:18px;line-height:1.4}
+  ol.howto li{margin-bottom:12px}
+  .tip{background:#fff8e1;border-radius:10px;padding:10px 12px;color:#5b4a00 !important;font-size:15px}
+  a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
   .linkbtn.inline{display:inline;margin:0;padding:6px 2px;font-size:15px}
   .install{display:none;max-width:640px;margin:12px auto 0;padding:0 16px}
   .install.show{display:block}
@@ -127,6 +134,7 @@
     <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
   </section>
 
+  <div class="homewrap" id="homeWrap" hidden><button type="button" class="homebtn" id="homeBtn">📲 Add to Home Screen</button></div>
   <div class="officeline">Sending to <b id="officeName">—</b> · <button type="button" class="linkbtn inline" id="officeChange">Change office</button></div>
 </main>
 
@@ -134,6 +142,25 @@
   <button id="send" class="send" disabled>Send to Office ✉</button>
   <div id="need" class="need"></div>
 </div>
+
+<dialog id="howto">
+  <h2>Add to Home Screen</h2>
+  <ol class="howto" id="stepsSafari">
+    <li><b>Tap Share</b> — the square with the up arrow at the bottom of Safari. Don't see it? Tap <b>•••</b> first, then Share.</li>
+    <li><b>Swipe the list up</b> (or tap <b>View More</b>) to see every option.</li>
+    <li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+  </ol>
+  <ol class="howto" id="stepsChrome" hidden>
+    <li><b>Tap Share</b> — the square with the up arrow at the top right, next to the address bar.</li>
+    <li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+  </ol>
+  <p class="tip">Dark address bar? That's a Private tab, which can't add to the home screen. Switch to a normal tab first.</p>
+  <p>Not seeing <b>Add to Home Screen</b>? The page may be open inside another app (Outlook, Teams, a scanner app). Open it in Safari:</p>
+  <div class="btns">
+    <a class="btn go" id="openSafari" href="#">Open in Safari</a>
+    <button type="button" class="btn alt" id="howtoClose">Close</button>
+  </div>
+</dialog>
 
 <dialog id="officePick">
   <h2>Which office?</h2>
@@ -500,8 +527,18 @@
     e.preventDefault(); deferredPrompt = e;
     showInstall("Opens like an app — one tap from the home screen.", true);
   });
+  // Step-by-step help (iPhone): a page can't add itself, so show exactly where to tap.
+  const isChromeIOS = /CriOS/.test(navigator.userAgent);
+  function openHowto() {
+    $("stepsChrome").hidden = !isChromeIOS; $("stepsSafari").hidden = isChromeIOS;
+    $("openSafari").href = "x-safari-" + location.href.split("#")[0];
+    $("howto").showModal();
+  }
+  $("homeBtn").onclick = openHowto;
+  $("howtoClose").onclick = () => $("howto").close();
+  if (isIOS && !standalone) $("homeWrap").hidden = false;
   $("installYes").onclick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) { openHowto(); return; }
     deferredPrompt.prompt();
     try { await deferredPrompt.userChoice; } catch (e) {}
     deferredPrompt = null; $("install").classList.remove("show");
@@ -509,7 +546,8 @@
   $("installNo").onclick = () => { save("dp_install_dismissed", Date.now()); $("install").classList.remove("show"); };
   window.addEventListener("appinstalled", () => $("install").classList.remove("show"));
   if (isIOS && !standalone) {
-    showInstall('In Safari, tap the Share button <span class="share-ico">⬆</span> at the bottom, then <b style="display:inline;font-size:inherit">Add to Home Screen</b>.', false);
+    showInstall('Opens like an app — one tap from the home screen.', true);
+    $("installYes").textContent = "Show me how";
   }
 
   // ---------- offline support ----------
