@@ -1,5 +1,5 @@
 // Drum Photo — offline support. Bump VERSION whenever any app file changes.
-const VERSION = "drum-photo-v10";
+const VERSION = "drum-photo-v11";
 const FILES = [
   "./",
   "./index.html",
