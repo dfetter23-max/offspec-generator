@@ -1,5 +1,5 @@
 // Drum Photo — offline support. Bump VERSION whenever any app file changes.
-const VERSION = "drum-photo-v11";
+const VERSION = "drum-photo-v12";
 const FILES = [
   "./",
   "./index.html",
@@ -28,12 +28,19 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
-  // The page itself: try the network first so updates show up, fall back to the saved copy.
+  // The page itself: open the saved copy right away (so a slow or blocked Wi-Fi can't stall it),
+  // and fetch a fresh copy in the background for next time.
   if (req.mode === "navigate") {
-    e.respondWith(
-      fetch(req).then(res => { const copy = res.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return res; })
-        .catch(() => caches.match("./index.html"))
-    );
+    e.respondWith((async () => {
+      const cache = await caches.open(VERSION);
+      const saved = await cache.match("./index.html");
+      const fresh = fetch(req, { cache: "no-store" }).then(res => {
+        if (res.ok) cache.put("./index.html", res.clone());
+        return res;
+      });
+      if (saved) { e.waitUntil(fresh.catch(() => {})); return saved; }
+      return fresh;
+    })());
     return;
   }
   // Everything else (icons, barcode reader): saved copy first, network if missing.
