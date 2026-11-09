@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Label Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Oswald:wght@700&family=Anton&family=Bebas+Neue&family=Teko:wght@700&family=Russo+One&family=Saira+Extra+Condensed:wght@700&family=Bungee&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:#0c0f14;color:#e2e4e9;min-height:100vh;display:flex;gap:24px;padding:24px}
+
+.editor-panel{flex:1;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-title{font-size:1rem;font-weight:700;color:#a78bfa;letter-spacing:-.02em}
+
+.canvas-outer{width:480px;height:384px;overflow:hidden;border-radius:6px;border:2px solid #2a2f3a;flex-shrink:0}
+.canvas-inner{width:480px;height:384px;background:#fff;transform:scale(1.0);transform-origin:top left}
+.label-canvas{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;overflow:hidden;cursor:text}
+.label-sub,.print-sub,.thumb-sub{width:100%;border-top:4px solid #000;margin-top:14px;padding-top:8px;text-align:center;color:#000;font-family:'Oswald',sans-serif;font-weight:700;font-size:22px;line-height:1.15;white-space:pre-wrap;outline:none}
+.label-sub:empty,.print-sub:empty{display:none}
+.label-canvas .label-text{width:100%;text-align:center;color:#000;outline:none;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;line-height:1.12}
+
+.editor-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctrl-group{display:flex;align-items:center;gap:5px}
+.ctrl-label{font-size:.72rem;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:.04em}
+select,button,.size-btn{font-family:'DM Sans',sans-serif;background:#1a1d26;color:#e2e4e9;border:1px solid #2a2f3a;border-radius:6px;padding:5px 10px;font-size:.82rem;cursor:pointer;transition:all .15s}
+select:hover,button:hover,.size-btn:hover{border-color:#60a5fa;background:#1e2330}
+select{padding-right:24px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center}
+.font-select{min-width:170px}
+.size-btn{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700}
+.size-display{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:#60a5fa;min-width:36px;text-align:center}
+.btn-primary{background:#4f46e5;border-color:#4f46e5;color:#fff;font-weight:600}
+.btn-primary:hover{background:#6366f1;border-color:#6366f1}
+.btn-success{background:#166534;border-color:#166534;color:#fff;font-weight:600}
+.btn-success:hover{background:#15803d;border-color:#15803d}
+.btn-icon{width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.action-row{display:flex;gap:8px;flex-wrap:wrap}
+
+.side-panel{width:290px;flex-shrink:0;display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:calc(100vh - 48px)}
+
+.section-box{background:#12151c;border:1px solid #1e2330;border-radius:10px;padding:14px}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:.8rem;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em}
+
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.preset-thumb{background:transparent;border-radius:5px;cursor:pointer;position:relative;overflow:visible;border:none;transition:all .15s;width:100%}
+.preset-thumb:hover .thumb-canvas{border-color:#60a5fa}
+.preset-thumb.active .thumb-canvas{border-color:#a78bfa}
+.thumb-canvas{background:#fff;border-radius:5px;width:100%;aspect-ratio:5/4;overflow:hidden;border:2px solid transparent;transition:border-color .15s;position:relative}
+.preset-thumb .thumb-inner{width:480px;height:384px;transform-origin:top left;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;pointer-events:none;position:absolute;top:0;left:0}
+.preset-thumb .thumb-inner .thumb-label{width:100%;text-align:center;color:#000;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;line-height:1.12}
+.preset-thumb .admin-delete{position:absolute;top:2px;right:2px;width:16px;height:16px;background:rgba(153,27,27,.9);color:#fff;border:none;border-radius:50%;font-size:.6rem;cursor:pointer;display:none;align-items:center;justify-content:center;padding:0;line-height:1;z-index:2}
+.preset-thumb:hover .admin-delete.visible{display:flex}
+.thumb-name{color:#9ca3af;font-size:.68rem;text-align:center;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-dropdown{width:100%}
+
+.custom-list{display:flex;flex-direction:column;gap:5px}
+.custom-item{display:flex;align-items:center;gap:8px;padding:7px 9px;background:#1a1d26;border:1px solid #2a2f3a;border-radius:7px;cursor:pointer;transition:all .15s}
+.custom-item:hover{border-color:#60a5fa;background:#1e2330}
+.custom-item .item-preview{width:50px;height:40px;background:#fff;border-radius:3px;flex-shrink:0;overflow:hidden;position:relative}
+.custom-item .item-preview .preview-inner{width:480px;height:384px;transform-origin:top left;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;pointer-events:none;position:absolute;top:0;left:0}
+.custom-item .item-preview .preview-inner .preview-label{width:100%;text-align:center;color:#000;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;line-height:1.12}
+.custom-item .item-meta{flex:1;min-width:0}
+.custom-item .item-name{font-size:.78rem;font-weight:500;color:#e2e4e9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.custom-item .item-date{font-size:.65rem;color:#4b5563}
+
+.empty-state{color:#4b5563;font-size:.78rem;text-align:center;padding:12px 0;font-style:italic}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal-overlay.show{display:flex}
+.modal{background:#12151c;border:1px solid #2a2f3a;border-radius:10px;padding:20px;width:300px;max-width:90vw}
+.modal h3{font-size:.95rem;font-weight:600;color:#e2e4e9;margin-bottom:14px}
+.modal input[type="password"],.modal input[type="text"]{width:100%;padding:8px 10px;background:#1a1d26;border:1px solid #2a2f3a;border-radius:6px;color:#e2e4e9;font-family:'DM Sans',sans-serif;font-size:.85rem;margin-bottom:10px}
+.modal input:focus{outline:none;border-color:#60a5fa}
+.modal .modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.modal .error-msg{color:#ef4444;font-size:.78rem;margin-bottom:8px;display:none}
+
+@media print{
+  body{background:#fff!important;padding:0!important;display:block!important}
+  .editor-panel,.side-panel,.editor-controls,.action-row,.panel-title,.canvas-outer,.toast,.modal-overlay{display:none!important}
+  .print-label{display:flex!important;flex-direction:column;width:5in;height:4in;align-items:center;justify-content:center;padding:0.25in;margin:0;page-break-after:always}
+  .print-label .print-text{color:#000;text-align:center;word-wrap:break-word;overflow-wrap:break-word;white-space:pre-wrap;line-height:1.12;width:100%}
+  @page{size:5in 4in;margin:0}
+}
+.print-label{display:none}
+
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);background:#166534;color:#fff;padding:8px 18px;border-radius:7px;font-size:.82rem;font-weight:500;opacity:0;transition:all .3s;z-index:2000;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div class="editor-panel">
+  <div class="panel-title">Label Editor</div>
+  <div class="canvas-outer">
+    <div class="canvas-inner">
+      <div class="label-canvas" id="labelCanvas">
+        <div class="label-text" id="labelText" contenteditable="true" spellcheck="false">LABEL TEXT</div>
+        <div class="label-sub" id="labelSub" contenteditable="true" spellcheck="false"></div>
+      </div>
+    </div>
+  </div>
+  <div class="editor-controls">
+    <div class="ctrl-group">
+      <span class="ctrl-label">Font</span>
+      <select id="fontSelect" class="font-select">
+        <option value="'Bebas Neue', sans-serif">Bebas Neue</option>
+        <option value="'Anton', sans-serif">Anton</option>
+        <option value="'Oswald', sans-serif" selected>Oswald</option>
+        <option value="'Teko', sans-serif">Teko — Narrow</option>
+        <option value="'Russo One', sans-serif">Russo One — Wide</option>
+        <option value="'Saira Extra Condensed', sans-serif">Saira Extra Cond — Tall</option>
+        <option value="'Bungee', sans-serif">Bungee — Short</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <span class="ctrl-label">Size</span>
+      <button class="size-btn" id="sizeDown">−</button>
+      <span class="size-display" id="sizeDisplay">72px</span>
+      <button class="size-btn" id="sizeUp">+</button>
+    </div>
+    <div class="ctrl-group">
+      <button id="subBtn" title="Add or remove a small line of text under a rule">＋ Sub-line</button>
+    </div>
+    <div class="ctrl-group">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer">
+        <input type="checkbox" id="autoSizeToggle" checked style="accent-color:#a78bfa">
+        <span class="ctrl-label" style="text-transform:none">Auto-size</span>
+      </label>
+    </div>
+  </div>
+  <div class="action-row">
+    <button class="btn-primary" id="printBtn">🖨 Print Label</button>
+    <button class="btn-success" id="saveCustomBtn">💾 Save Custom</button>
+    <button id="clearBtn">✕ Clear</button>
+  </div>
+</div>
+
+<div class="side-panel">
+  <div class="section-box">
+    <div class="section-header">
+      <span class="section-title">Presets</span>
+    </div>
+    <div class="preset-grid" id="presetGrid">
+      <div class="empty-state" style="grid-column:1/-1">No presets yet</div>
+    </div>
+    <div id="presetDropdownWrap" style="display:none">
+      <select id="presetDropdown" class="preset-dropdown">
+        <option value="">— More presets —</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <div class="section-header">
+      <span class="section-title">Recent Custom Labels</span>
+      <span class="ctrl-label" style="text-transform:none;font-style:italic;color:#4b5563">this PC only</span>
+    </div>
+    <div class="custom-list" id="customList">
+      <div class="empty-state">No custom labels saved yet</div>
+    </div>
+  </div>
+</div>
+
+<div class="print-label" id="printTarget">
+  <div class="print-text" id="printText"></div>
+  <div class="print-sub" id="printSub"></div>
+</div>
+
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h3>💾 Save Custom Label</h3>
+    <input type="text" id="customNameInput" placeholder="Label name...">
+    <div class="modal-actions">
+      <button id="saveCancel">Cancel</button>
+      <button class="btn-success" id="saveConfirm">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   CONFIG — no Firebase: presets are built in, custom labels live
+   in this computer's browser storage.
+   ================================================================ */
+// Built-in presets. Order here = order shown (first 6 as thumbnails, rest in the dropdown).
+// font: one of the Font dropdown values; sub: optional small line under a rule;
+// autoSize:false + fontSize to pin a size.
+const PRESETS=[
+  {name:'Ship',             text:'SHIP',                font:"'Anton', sans-serif"},
+  {name:'Do Not Pump',      text:'DO NOT\nPUMP',        font:"'Anton', sans-serif"},
+  {name:'Flash',            text:'FLASH',               font:"'Anton', sans-serif", sub:'Powder material flashed in lab.'},
+  {name:'Do Not Shred',     text:'DO NOT\nSHRED',       font:"'Anton', sans-serif"},
+  {name:'Return to Depack', text:'RETURN TO\nDEPACK',   font:"'Anton', sans-serif"},
+  {name:'Do Not Process',   text:'DO NOT\nPROCESS',     font:"'Anton', sans-serif"}
+];
+const MAX_CUSTOM=5;
+const CUSTOM_KEY='rtLabelCustom';
+const CANVAS_W=480;
+const CANVAS_H=384;
+const CANVAS_PAD=24;
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let currentFontSize=72;
+let autoSize=true;
+let presets=PRESETS.map((p,i)=>Object.assign({id:'p'+i},p));
+let customLabels=[];
+let activePresetId=null;
+
+/* ================================================================
+   DOM REFS
+   ================================================================ */
+const labelText=document.getElementById('labelText');
+const labelSub=document.getElementById('labelSub');
+const subBtn=document.getElementById('subBtn');
+const printSub=document.getElementById('printSub');
+const fontSelect=document.getElementById('fontSelect');
+const sizeDisplay=document.getElementById('sizeDisplay');
+const sizeDown=document.getElementById('sizeDown');
+const sizeUp=document.getElementById('sizeUp');
+const autoSizeToggle=document.getElementById('autoSizeToggle');
+const printBtn=document.getElementById('printBtn');
+const saveCustomBtn=document.getElementById('saveCustomBtn');
+const clearBtn=document.getElementById('clearBtn');
+const presetGrid=document.getElementById('presetGrid');
+const presetDropdownWrap=document.getElementById('presetDropdownWrap');
+const presetDropdown=document.getElementById('presetDropdown');
+const customList=document.getElementById('customList');
+const printText=document.getElementById('printText');
+const saveModal=document.getElementById('saveModal');
+const customNameInput=document.getElementById('customNameInput');
+const saveCancel=document.getElementById('saveCancel');
+const saveConfirm=document.getElementById('saveConfirm');
+const toastEl=document.getElementById('toast');
+
+/* ================================================================
+   AUTO-SIZE ENGINE — binary search against full 480x384 canvas
+   ================================================================ */
+function autoFitText(){
+  if(!autoSize) return;
+  const text=labelText.innerText.trim();
+  if(!text){currentFontSize=120;applyFontSize();return}
+  const maxW=CANVAS_W-(CANVAS_PAD*2);
+  const maxH=CANVAS_H-(CANVAS_PAD*2)-subHeight();
+  let lo=12,hi=500,best=12;
+  for(let i=0;i<30;i++){
+    const mid=Math.floor((lo+hi)/2);
+    labelText.style.fontSize=mid+'px';
+    if(labelText.scrollWidth<=maxW+2 && labelText.scrollHeight<=maxH+2){best=mid;lo=mid+1}
+    else{hi=mid-1}
+  }
+  currentFontSize=best;
+  applyFontSize();
+}
+// Fit a preset's text the same way the editor does, using a hidden copy of the canvas
+function fitPresetSizes(){
+  const box=document.createElement('div');
+  box.className='label-canvas';
+  box.style.cssText='position:absolute;left:-9999px;top:0;width:'+CANVAS_W+'px;height:'+CANVAS_H+'px;visibility:hidden';
+  box.innerHTML='<div class="label-text"></div><div class="label-sub"></div>';
+  document.body.appendChild(box);
+  const t=box.firstChild,sb=box.lastChild;
+  presets.forEach(p=>{
+    if(p.autoSize===false)return;
+    t.innerText=p.text||'';t.style.fontFamily=p.font||"'Oswald', sans-serif";sb.innerText=p.sub||'';
+    const maxW=CANVAS_W-CANVAS_PAD*2,maxH=CANVAS_H-CANVAS_PAD*2-(p.sub?sb.offsetHeight+14:0);
+    let lo=12,hi=500,best=12;
+    while(lo<=hi){const mid=(lo+hi)>>1;t.style.fontSize=mid+'px';
+      if(t.scrollWidth<=maxW+2&&t.scrollHeight<=maxH+2){best=mid;lo=mid+1}else hi=mid-1}
+    p.fontSize=best;
+  });
+  box.remove();
+}
+function subText(){return labelSub.innerText.replace(/\n+$/,'')}
+function subHeight(){return labelSub.innerText.trim()||document.activeElement===labelSub?labelSub.offsetHeight+14:0}
+function setSub(t){labelSub.innerText=t||'';subBtn.textContent=t?'− Sub-line':'＋ Sub-line'}
+function applyFontSize(){
+  labelText.style.fontSize=currentFontSize+'px';
+  sizeDisplay.textContent=currentFontSize+'px';
+}
+
+/* ================================================================
+   EDITOR EVENTS
+   ================================================================ */
+labelText.addEventListener('input',()=>{if(autoSize)autoFitText()});
+labelSub.addEventListener('input',()=>{if(autoSize)autoFitText()});
+subBtn.addEventListener('click',()=>{
+  if(subText().trim()){setSub('')}
+  else{setSub('Sub-line text');const r=document.createRange();r.selectNodeContents(labelSub);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);labelSub.focus()}
+  if(autoSize)autoFitText();
+});
+fontSelect.addEventListener('change',()=>{
+  labelText.style.fontFamily=fontSelect.value;
+  if(autoSize) autoFitText();
+});
+sizeDown.addEventListener('click',()=>{
+  autoSize=false;autoSizeToggle.checked=false;
+  currentFontSize=Math.max(8,currentFontSize-1);applyFontSize();
+});
+sizeUp.addEventListener('click',()=>{
+  autoSize=false;autoSizeToggle.checked=false;
+  currentFontSize=Math.min(500,currentFontSize+1);applyFontSize();
+});
+autoSizeToggle.addEventListener('change',()=>{
+  autoSize=autoSizeToggle.checked;
+  if(autoSize) autoFitText();
+});
+clearBtn.addEventListener('click',()=>{
+  labelText.innerText='LABEL TEXT';
+  setSub('');
+  fontSelect.value="'Oswald', sans-serif";
+  labelText.style.fontFamily=fontSelect.value;
+  autoSize=true;autoSizeToggle.checked=true;
+  activePresetId=null;
+  autoFitText();renderPresets();
+});
+labelText.style.fontFamily=fontSelect.value;
+
+/* ================================================================
+   PRINT — 480px canvas = 5in at 96dpi, so font sizes are 1:1
+   ================================================================ */
+printBtn.addEventListener('click',()=>{
+  printText.innerText=labelText.innerText;
+  printText.style.fontFamily=labelText.style.fontFamily;
+  printText.style.fontSize=currentFontSize+'px';
+  printText.style.lineHeight='1.12';
+  printSub.innerText=subText().trim();
+  window.print();
+});
+
+/* ================================================================
+   GET / LOAD STATE
+   ================================================================ */
+function getLabelState(){
+  return{text:labelText.innerText,sub:subText().trim(),font:fontSelect.value,fontSize:currentFontSize,autoSize};
+}
+function loadLabelState(s){
+  labelText.innerText=s.text||'';
+  setSub(s.sub||'');
+  fontSelect.value=s.font||"'Oswald', sans-serif";
+  labelText.style.fontFamily=fontSelect.value;
+  if(s.autoSize!==false){autoSize=true;autoSizeToggle.checked=true;autoFitText()}
+  else{autoSize=false;autoSizeToggle.checked=false;currentFontSize=s.fontSize||72;applyFontSize()}
+}
+
+/* ================================================================
+   CUSTOM LABELS — this computer only (localStorage), newest 5 kept
+   ================================================================ */
+function loadCustomLabels(){
+  try{customLabels=JSON.parse(localStorage.getItem(CUSTOM_KEY)||'[]')}catch(e){customLabels=[]}
+  if(!Array.isArray(customLabels))customLabels=[];
+  renderCustomLabels();
+}
+function saveCustomLabel(name,state){
+  customLabels.unshift(Object.assign({id:'c'+Date.now(),name,saved:Date.now()},state));
+  customLabels=customLabels.slice(0,MAX_CUSTOM);
+  try{localStorage.setItem(CUSTOM_KEY,JSON.stringify(customLabels));toast('Custom label saved: '+name)}
+  catch(e){toast('Could not save on this computer')}
+  renderCustomLabels();
+}
+
+/* ================================================================
+   RENDER: PRESETS
+   ================================================================ */
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function renderPresets(){
+  const top4=presets.slice(0,6),rest=presets.slice(6);
+  if(!presets.length){
+    presetGrid.innerHTML='<div class="empty-state" style="grid-column:1/-1">No presets yet</div>';
+    presetDropdownWrap.style.display='none';return;
+  }
+  let html='';
+  top4.forEach(p=>{
+    const f=p.font||"'Oswald', sans-serif";
+    const textHtml=esc(p.text||'').replace(/\n/g,'<br>');
+    const fs=p.fontSize||72;
+    html+='<div class="preset-thumb'+(activePresetId===p.id?' active':'')+'" onclick="loadPreset(\''+p.id+'\')" title="'+esc(p.name)+'">'
+      +'<div class="thumb-canvas"><div class="thumb-inner"><div class="thumb-label" style="font-family:'+esc(f)+';font-size:'+fs+'px">'+textHtml+'</div>'+(p.sub?'<div class="thumb-sub">'+esc(p.sub)+'</div>':'')+'</div></div>'
+      +'<div class="thumb-name">'+(esc(p.name)||'Untitled')+'</div></div>';
+  });
+  presetGrid.innerHTML=html;
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.preset-thumb .thumb-canvas').forEach(el=>{
+      const inner=el.querySelector('.thumb-inner');
+      if(inner) inner.style.transform='scale('+(el.clientWidth/480)+')';
+    });
+  });
+  if(rest.length){
+    presetDropdownWrap.style.display='block';
+    let opts='<option value="">— More presets ('+rest.length+') —</option>';
+    rest.forEach(p=>{opts+='<option value="'+p.id+'">'+(esc(p.name)||'Untitled')+'</option>'});
+    presetDropdown.innerHTML=opts;
+  }else{presetDropdownWrap.style.display='none'}
+}
+window.loadPreset=function(id){
+  const p=presets.find(x=>x.id===id);if(!p)return;
+  activePresetId=id;loadLabelState(p);renderPresets();
+};
+presetDropdown.addEventListener('change',()=>{
+  if(presetDropdown.value)window.loadPreset(presetDropdown.value);presetDropdown.value='';
+});
+
+/* ================================================================
+   RENDER: CUSTOM LABELS
+   ================================================================ */
+function renderCustomLabels(){
+  if(!customLabels.length){customList.innerHTML='<div class="empty-state">No custom labels saved yet</div>';return}
+  let html='';
+  customLabels.forEach(c=>{
+    const f=c.font||"'Oswald', sans-serif";
+    const fs=c.fontSize||72;
+    const textHtml=esc(c.text||'').replace(/\n/g,'<br>');
+    const dateStr=c.saved?new Date(c.saved).toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'';
+    html+='<div class="custom-item" onclick="loadCustom(\''+esc(c.id)+'\')">'
+      +'<div class="item-preview"><div class="preview-inner" style="transform:scale(0.104)"><div class="preview-label" style="font-family:'+esc(f)+';font-size:'+fs+'px">'+textHtml+'</div>'+(c.sub?'<div class="thumb-sub">'+esc(c.sub)+'</div>':'')+'</div></div>'
+      +'<div class="item-meta"><div class="item-name">'+(esc(c.name)||'Untitled')+'</div>'
+      +'<div class="item-date">'+dateStr+'</div></div></div>';
+  });
+  customList.innerHTML=html;
+}
+window.loadCustom=function(id){
+  const c=customLabels.find(x=>x.id===id);if(!c)return;
+  activePresetId=null;loadLabelState(c);renderPresets();
+};
+
+/* ================================================================
+   SAVE CUSTOM
+   ================================================================ */
+saveCustomBtn.addEventListener('click',()=>{
+  const state=getLabelState();
+  if(state.text.trim()==='LABEL TEXT'||!state.text.trim()){toast('Enter label text first');return}
+  customNameInput.value=state.text.split('\n')[0].trim().substring(0,40);
+  saveModal.classList.add('show');
+  setTimeout(()=>{customNameInput.focus();customNameInput.select()},100);
+});
+saveCancel.addEventListener('click',()=>saveModal.classList.remove('show'));
+saveModal.addEventListener('click',(e)=>{if(e.target===saveModal)saveModal.classList.remove('show')});
+saveConfirm.addEventListener('click',()=>{
+  saveCustomLabel(customNameInput.value.trim()||'Untitled',getLabelState());
+  saveModal.classList.remove('show');
+});
+customNameInput.addEventListener('keydown',(e)=>{if(e.key==='Enter')saveConfirm.click()});
+
+/* ================================================================
+   TOAST
+   ================================================================ */
+let toastTimer;
+function toast(msg){
+  toastEl.textContent=msg;toastEl.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>toastEl.classList.remove('show'),2500);
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+renderPresets();loadCustomLabels();
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>{fitPresetSizes();renderPresets();autoFitText()});
+setTimeout(()=>autoFitText(),150);
+window.addEventListener('resize',()=>{if(autoSize)autoFitText()});
+</script>
+</body>
+</html>
