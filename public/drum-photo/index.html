@@ -172,7 +172,8 @@
   <h2>Sent?</h2>
   <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
   <div class="btns">
-    <button class="btn go" id="nextDrum">Next drum</button>
+    <button class="btn go" id="nextDrum">Next drum — same load</button>
+    <button class="btn" id="newLoad">New load — start over</button>
     <button class="btn alt" id="goBack">Back — didn't send</button>
   </div>
 </dialog>
@@ -504,6 +505,7 @@
     renderPhotos(); changed(); window.scrollTo(0, 0);
   }
   $("nextDrum").onclick = () => { $("done").close(); clearDrum(); };
+  $("newLoad").onclick = () => { $("done").close(); $("load").value = ""; $("loadStatus").textContent = ""; clearDrum(); };
   $("goBack").onclick = () => $("done").close();
   $("clearBtn").onclick = () => {
     const hasWork = photos.length || val("drum") || picked.size || val("note") || val("load");
