@@ -249,6 +249,17 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid color-mix(in srgb, var(--accent, var(--amber)) 30%, transparent);
 }
 
+/* Compact one-line card (small links under a section) */
+.card.mini {
+  flex-direction: row; align-items: center; gap: 12px;
+  padding: 11px 14px; border-radius: 10px; max-width: 360px;
+}
+.card.mini:hover { transform: translateY(-2px); }
+.card.mini .icon { width: 30px; height: 30px; font-size: 15px; margin: 0; flex: none; border-radius: 8px; }
+.card.mini h3 { font-size: 14px; margin: 0; }
+.card.mini .sub { font-size: 11.5px; color: var(--muted); }
+.card.mini .arrow { margin-left: auto; color: var(--accent, var(--amber)); font-size: 13px; }
+
 /* Accents */
 .a-amber  { --accent: var(--amber); }
 .a-blue   { --accent: var(--blue); }
@@ -595,6 +606,12 @@ footer.site a:hover { color: var(--ink); }
           </a>
 
         </div>
+
+        <a class="card mini a-blue" data-sites="TN" href="aging-drums" target="_blank" rel="noopener" style="margin-top: 14px">
+          <span class="icon">&#128197;</span>
+          <span><h3>Aging Drums Report</h3><span class="sub">6-month+ drums, one report per area</span></span>
+          <span class="arrow">&#8599;</span>
+        </a>
       </section>
 
     </div>
