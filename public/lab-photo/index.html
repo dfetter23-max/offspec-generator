@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>if(!location.pathname.endsWith("/")&&!/\.[a-z0-9]+$/i.test(location.pathname))location.replace(location.pathname+"/"+location.search+location.hash);</script>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lab Photo</title>
+<meta name="theme-color" content="#7a1414">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lab Photo">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<style>
+  :root{
+    --bg:#eef1f5; --card:#fff; --ink:#111; --muted:#5b6573; --line:#c9d1dc;
+    --brand:#7a1414; --brand2:#9a3030; --accent:#0a7c3e; --warn:#b42318; --ok:#0a7c3e; --pre:#1f3a5f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  header{position:sticky;top:0;z-index:5;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top))}
+  header .title{display:flex;align-items:center;gap:10px}
+  header h1{margin:0;font-size:22px}
+  header .clearbtn{background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.6);color:#fff;font-size:18px;font-weight:700;padding:8px 18px;border-radius:10px;cursor:pointer}
+  main{max-width:640px;margin:0 auto;padding:12px 16px 130px}
+  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  label{display:block;font-weight:700;font-size:17px;margin:4px 0 6px}
+  label .opt{font-weight:400;color:var(--muted)}
+  label .req{font-weight:600;color:var(--warn)}
+  textarea{width:100%;font-size:20px;padding:12px;border:2px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);resize:vertical;font-family:inherit}
+  textarea:focus{outline:none;border-color:var(--brand)}
+  .numbox{display:flex;align-items:center;border:2px solid var(--line);border-radius:10px;background:#fff}
+  .numbox:focus-within{border-color:var(--brand)}
+  .numbox.ok{border-color:var(--ok);background:#f0faf4}
+  .pre{font-size:30px;font-weight:900;color:var(--pre);padding:0 2px 0 14px;line-height:1}
+  .numbox input{border:0;background:transparent;font-size:30px;font-weight:700;letter-spacing:.06em;padding:12px 12px 12px 2px;min-width:0;width:100%;color:var(--ink);font-family:inherit}
+  .numbox input.nopre{padding-left:14px}
+  .numbox input:focus{outline:none}
+  .step{font-size:15px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 8px}
+  .bigbtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:84px;background:var(--brand);color:#fff;border-radius:12px;font-size:25px;font-weight:700;cursor:pointer;user-select:none;text-align:center;padding:8px}
+  .bigbtn.more{min-height:60px;font-size:21px;background:var(--brand2)}
+  .photos{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+  .photos:empty{display:none}
+  .ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:#ddd}
+  .ph img{width:100%;height:100%;object-fit:cover;display:block}
+  .ph button{position:absolute;top:6px;right:6px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:22px;cursor:pointer}
+  .hint{color:var(--muted);font-size:15px;margin-top:8px;text-align:center}
+  .status{font-size:16px;margin-top:6px;min-height:1.3em;font-weight:600}
+  .status.ok{color:var(--ok)} .status.wait{color:var(--muted)} .status.bad{color:var(--warn)}
+  .sendbar{position:fixed;left:0;right:0;bottom:0;background:linear-gradient(transparent,var(--bg) 30%);padding:16px;padding-bottom:max(16px,env(safe-area-inset-bottom))}
+  body.typing .sendbar{display:none}
+  .send{display:block;width:100%;max-width:640px;margin:0 auto;min-height:68px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-size:26px;font-weight:800;cursor:pointer}
+  .send:disabled{background:#9aa4b1;cursor:default}
+  .need{max-width:640px;margin:6px auto 0;text-align:center;color:var(--muted);font-size:15px;min-height:1.2em}
+  .err{color:var(--warn)}
+  dialog{border:0;border-radius:16px;padding:20px;width:min(92vw,520px)}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  dialog h2{margin:0 0 8px}
+  dialog p{color:var(--muted);font-size:15px;margin:4px 0 12px}
+  .btns{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+  .btn{min-height:58px;border:0;border-radius:12px;font-size:20px;font-weight:700;cursor:pointer;background:var(--brand);color:#fff}
+  .btn.alt{background:#e2e7ee;color:var(--ink)}
+  .btn.go{background:var(--accent)}
+  a.btn{display:flex;align-items:center;justify-content:center;text-decoration:none}
+  .addr{font-weight:700;color:var(--brand);word-break:break-all}
+  button,.bigbtn{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  .linkbtn{background:none;border:0;color:var(--brand);text-decoration:underline;font-size:16px;padding:10px;cursor:pointer}
+  .linkbtn.inline{display:inline;margin:0;padding:6px 2px;font-size:15px}
+  .officeline{text-align:center;color:var(--muted);font-size:15px;margin:4px 0 8px}
+  .officeline b{color:var(--ink)}
+  .homewrap{text-align:center;margin:6px 0 10px}
+  .homewrap[hidden]{display:none}
+  .homebtn{border:2px solid var(--brand);background:#fff;color:var(--brand);font-size:19px;font-weight:800;border-radius:12px;padding:14px 22px;min-height:56px;cursor:pointer}
+  ol.howto{margin:8px 0 0;padding-left:26px;font-size:18px;line-height:1.4}
+  ol.howto li{margin-bottom:12px}
+  .tip{background:#fff8e1;border-radius:10px;padding:10px 12px;color:#5b4a00 !important;font-size:15px}
+  .install{display:none;max-width:640px;margin:12px auto 0;padding:0 16px}
+  .install.show{display:block}
+  .install .box{background:#fff8e1;border:2px solid #f0c24b;border-radius:14px;padding:14px;font-size:17px}
+  .install .box b{display:block;font-size:19px;margin-bottom:6px}
+  .install .row{display:flex;gap:10px;margin-top:10px}
+  .install .row button{flex:1;min-height:52px;border:0;border-radius:10px;font-size:18px;font-weight:700;cursor:pointer}
+  .install .yes{background:var(--brand);color:#fff}
+  .install .no{background:#e2e7ee;color:var(--ink)}
+</style>
+</head>
+<body>
+<header>
+  <div class="title">
+    <svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6"/><path d="M10 3v6L5 19a1.5 1.5 0 0 0 1.3 2h11.4a1.5 1.5 0 0 0 1.3-2L14 9V3"/><path d="M7.5 15h9"/></svg>
+    <h1>Lab Photo</h1>
+  </div>
+  <button type="button" class="clearbtn" id="clearBtn">Clear</button>
+</header>
+
+<div class="install" id="install">
+  <div class="box">
+    <b>Put Lab Photo on the home screen</b>
+    <span id="installText"></span>
+    <div class="row">
+      <button type="button" class="yes" id="installYes">Install</button>
+      <button type="button" class="no" id="installNo">Not now</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <section class="card">
+    <div class="step">Sample photos</div>
+    <div id="photos" class="photos"></div>
+    <label class="bigbtn" id="camBtn"><span id="camText">📷 Take Photo</span>
+      <input id="cam" type="file" accept="image/*" capture="environment" hidden>
+    </label>
+    <div class="hint" id="photoHint">Up to 5 photos</div>
+  </section>
+
+  <section class="card">
+    <label for="load">Load # <span class="req">(required)</span></label>
+    <div class="numbox" id="loadBox"><input id="load" class="nopre" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" autocomplete="off" spellcheck="false" placeholder="5 digits"></div>
+    <div class="status" id="loadStatus"></div>
+
+    <label for="sample" style="margin-top:8px">Sample # <span class="opt">(optional)</span></label>
+    <div class="numbox" id="sampleBox"><span class="pre">S</span><input id="sample" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" spellcheck="false" placeholder="9 digits" aria-label="Sample number digits"></div>
+    <div class="status" id="sampleStatus"></div>
+
+    <label for="drum" style="margin-top:8px">Drum # <span class="opt">(optional)</span></label>
+    <div class="numbox" id="drumBox"><span class="pre">D</span><input id="drum" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="9" autocomplete="off" spellcheck="false" placeholder="9 digits" aria-label="Drum number digits"></div>
+    <div class="status" id="drumStatus"></div>
+  </section>
+
+  <section class="card">
+    <label for="note">Notes <span class="opt">(optional)</span></label>
+    <textarea id="note" rows="4" placeholder="What the office should know about this sample"></textarea>
+  </section>
+
+  <div class="homewrap" id="homeWrap" hidden><button type="button" class="homebtn" id="homeBtn">📲 Add to Home Screen</button></div>
+  <div class="officeline">Sending to <b id="officeName">—</b> · <button type="button" class="linkbtn inline" id="officeChange">Change office</button></div>
+</main>
+
+<div class="sendbar">
+  <button id="send" class="send" disabled>Send to Office ✉</button>
+  <div id="need" class="need"></div>
+</div>
+
+<dialog id="howto">
+  <h2>Add to Home Screen</h2>
+  <ol class="howto" id="stepsSafari">
+    <li><b>Tap Share</b> — the square with the up arrow at the bottom of Safari. Don't see it? Tap <b>•••</b> first, then Share.</li>
+    <li><b>Swipe the list up</b> (or tap <b>View More</b>) to see every option.</li>
+    <li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+  </ol>
+  <ol class="howto" id="stepsChrome" hidden>
+    <li><b>Tap Share</b> — the square with the up arrow at the top right, next to the address bar.</li>
+    <li>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+  </ol>
+  <p class="tip">Dark address bar? That's a Private tab, which can't add to the home screen. Switch to a normal tab first.</p>
+  <p>Not seeing <b>Add to Home Screen</b>? The page may be open inside another app (Outlook, Teams, a scanner app). Open it in Safari:</p>
+  <div class="btns">
+    <a class="btn go" id="openSafari" href="#">Open in Safari</a>
+    <button type="button" class="btn alt" id="howtoClose">Close</button>
+  </div>
+</dialog>
+
+<dialog id="officePick">
+  <h2>Which office?</h2>
+  <p>Photos from this phone will go to that office. You only pick once.</p>
+  <div class="btns" id="officeBtns"></div>
+</dialog>
+
+<dialog id="done">
+  <h2>Sent?</h2>
+  <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
+  <div class="btns">
+    <button class="btn go" id="nextSample">Next sample — same load</button>
+    <button class="btn alt" id="goBack">Back — didn't send</button>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  // ===== Office inboxes. Each phone picks its office once (remembered on the phone). =====
+  const OFFICES = {
+    EC: { name: "East Chicago", email: "EC.ReceivingOffice@tradebe.com" },
+    TN: { name: "Millington",   email: "TN.ReceivingGroup@tradebe.com" }
+  };
+  const MAX_PHOTOS = 5, MAX_SIDE = 1600, JPEG_Q = 0.82;
+
+  const $ = id => document.getElementById(id);
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+  const save = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  const val = id => $(id).value.trim();
+
+  let photos = [];   // {file, url, time}
+  let ver = 0, ready = null, timer = null;
+
+  // ---------- photos ----------
+  $("cam").addEventListener("change", e => {
+    for (const f of e.target.files) {
+      if (photos.length >= MAX_PHOTOS) break;
+      if (!f.type.startsWith("image/")) continue;
+      photos.push({ file: f, url: URL.createObjectURL(f), time: Date.now() });
+    }
+    e.target.value = "";
+    renderPhotos(); changed();
+  });
+
+  function renderPhotos() {
+    const box = $("photos"); box.innerHTML = "";
+    photos.forEach((p, i) => {
+      const d = document.createElement("div"); d.className = "ph";
+      d.innerHTML = `<img alt="Photo ${i + 1}"><button type="button" aria-label="Remove photo">×</button>`;
+      d.querySelector("img").src = p.url;
+      d.querySelector("button").onclick = () => { URL.revokeObjectURL(p.url); photos.splice(photos.indexOf(p), 1); renderPhotos(); changed(); };
+      box.appendChild(d);
+    });
+    $("camText").textContent = photos.length ? "📷 Add Another Photo" : "📷 Take Photo";
+    $("camBtn").classList.toggle("more", photos.length > 0);
+    $("camBtn").style.display = photos.length >= MAX_PHOTOS ? "none" : "";
+    $("photoHint").textContent = photos.length >= MAX_PHOTOS ? `${MAX_PHOTOS} photos max` : photos.length ? `${photos.length} of ${MAX_PHOTOS} photos` : "Up to 5 photos";
+  }
+
+  // ---------- number fields: number pad, digits only, closes itself when full ----------
+  function numField(id, len) {
+    const el = $(id), box = $(id + "Box"), st = $(id + "Status");
+    el.addEventListener("input", () => {
+      const digits = el.value.replace(/\D/g, "").slice(0, len);
+      if (el.value !== digits) el.value = digits;
+      box.classList.toggle("ok", digits.length === len);
+      if (digits.length === len) { st.textContent = `✓ ${len} digits`; st.className = "status ok"; el.blur(); }
+      else { st.textContent = digits.length ? `${digits.length} of ${len} digits` : ""; st.className = "status wait"; }
+      changed();
+    });
+    el.addEventListener("focus", () => {
+      document.body.classList.add("typing");
+      setTimeout(() => box.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+    });
+    el.addEventListener("blur", () => document.body.classList.remove("typing"));
+  }
+  numField("load", 5); numField("sample", 9); numField("drum", 9);
+  $("note").addEventListener("input", changed);
+
+  const digits = id => $(id).value.replace(/\D/g, "");
+  const loadNo = () => digits("load");
+  const sampleNo = () => digits("sample") ? "S" + digits("sample") : "";
+  const drumNo = () => digits("drum") ? "D" + digits("drum") : "";
+
+  function missing() {
+    const m = [];
+    if (!photos.length) m.push("a photo");
+    if (loadNo().length !== 5) m.push("5-digit load #");
+    const s = digits("sample").length, d = digits("drum").length;
+    if (s && s !== 9) m.push("all 9 sample # digits");
+    if (d && d !== 9) m.push("all 9 drum # digits");
+    return m;
+  }
+
+  function changed() {
+    ver++; ready = null; clearTimeout(timer);
+    updateSend();
+    if (!missing().length) timer = setTimeout(build, 350);
+  }
+
+  function updateSend() {
+    const m = missing(), btn = $("send"), need = $("need");
+    need.classList.remove("err");
+    if (m.length) { btn.disabled = true; btn.textContent = "Send to Office ✉"; need.textContent = "Needs " + m.join(", "); }
+    else if (!ready || ready.ver !== ver) { btn.disabled = true; btn.textContent = "Preparing…"; need.textContent = ""; }
+    else { btn.disabled = false; btn.textContent = "Send to Office ✉"; need.textContent = ""; }
+  }
+
+  // ---------- message text ----------
+  function stamp() {
+    const t = photos.length ? Math.min(...photos.map(p => p.time)) : Date.now();
+    return new Date(t).toLocaleString([], { month: "2-digit", day: "2-digit", year: "2-digit", hour: "numeric", minute: "2-digit" });
+  }
+  function subject() {
+    const parts = ["Lab Photo", "Load " + loadNo()];
+    if (sampleNo()) parts.push(sampleNo());
+    if (drumNo()) parts.push(drumNo());
+    return parts.join(" – ");
+  }
+  function body() {
+    const L = ["Load #: " + loadNo()];
+    if (sampleNo()) L.push("Sample #: " + sampleNo());
+    if (drumNo()) L.push("Drum #: " + drumNo());
+    if (val("note")) L.push("Notes: " + val("note"));
+    L.push("Taken: " + stamp());
+    L.push("", `${photos.length} photo${photos.length > 1 ? "s" : ""} attached.`);
+    return L.join("\n");
+  }
+  function caption() {
+    const a = ["Load " + loadNo()];
+    if (sampleNo()) a.push(sampleNo());
+    if (drumNo()) a.push(drumNo());
+    if (val("note")) a.push(val("note").slice(0, 100));
+    a.push(stamp());
+    return a.join("  •  ");
+  }
+  function fileBase() { return ["L" + loadNo(), sampleNo(), drumNo()].filter(Boolean).join("_"); }
+
+  // ---------- image processing (shrink + caption bar under photo) ----------
+  function loadImg(url) {
+    return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  }
+  function wrap(ctx, text, maxW) {
+    const words = text.split(" "), lines = []; let cur = "";
+    for (const w of words) {
+      const t = cur ? cur + " " + w : w;
+      if (ctx.measureText(t).width > maxW && cur) { lines.push(cur); cur = w; } else cur = t;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+  async function processImage(p, cap, name) {
+    const img = await loadImg(p.url);
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const s = Math.min(1, MAX_SIDE / Math.max(w, h));
+    w = Math.round(w * s); h = Math.round(h * s);
+    const fs = Math.max(20, Math.round(w / 38)), pad = Math.round(fs * 0.6);
+    const c = document.createElement("canvas"), ctx = c.getContext("2d");
+    ctx.font = `bold ${fs}px system-ui, sans-serif`;
+    const lines = wrap(ctx, cap, w - pad * 2);
+    const barH = lines.length * fs * 1.3 + pad * 2;
+    c.width = w; c.height = Math.round(h + barH);
+    ctx.drawImage(img, 0, 0, w, h);
+    ctx.fillStyle = "#111"; ctx.fillRect(0, h, w, barH);
+    ctx.fillStyle = "#fff"; ctx.font = `bold ${fs}px system-ui, sans-serif`; ctx.textBaseline = "top";
+    lines.forEach((ln, i) => ctx.fillText(ln, pad, h + pad + i * fs * 1.3));
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", JPEG_Q));
+    return new File([blob], name, { type: "image/jpeg" });
+  }
+  async function build() {
+    const v = ver, cap = caption(), base = fileBase();
+    try {
+      const files = [];
+      for (let i = 0; i < photos.length; i++) files.push(await processImage(photos[i], cap, `${base}_${i + 1}.jpg`));
+      if (v === ver) { ready = { ver: v, files }; updateSend(); }
+    } catch (e) {
+      if (v === ver) { $("need").textContent = "Couldn't read a photo — remove it and retake."; $("need").classList.add("err"); }
+    }
+  }
+
+  // ---------- office ----------
+  // Uses this app's own choice; falls back to the Drum Photo choice on the same phone.
+  const officeKey = () => { const k = load("lp_office", "") || load("dp_office", ""); return OFFICES[k] ? k : ""; };
+  const office = () => officeKey() ? OFFICES[officeKey()].email : "";
+  function showOffice() { $("officeName").textContent = officeKey() ? OFFICES[officeKey()].name + " office" : "— pick an office"; }
+  Object.keys(OFFICES).forEach(k => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "btn"; b.textContent = OFFICES[k].name;
+    b.onclick = () => { save("lp_office", k); showOffice(); $("officePick").close(); };
+    $("officeBtns").appendChild(b);
+  });
+  $("officePick").addEventListener("cancel", e => { if (!officeKey()) e.preventDefault(); });
+  $("officeChange").onclick = () => $("officePick").showModal();
+
+  // ---------- send ----------
+  // Copy the office address on the same tap so it can be pasted into "To".
+  $("send").addEventListener("pointerdown", () => {
+    const a = office();
+    if (a && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(a).catch(() => {});
+  });
+  $("send").addEventListener("click", async () => {
+    if (!officeKey()) { $("officePick").showModal(); return; }
+    if (!ready || ready.ver !== ver) return;
+    const files = ready.files, subj = subject(), text = subj + "\n\n" + body();
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try { await navigator.share({ files, title: subj, text }); showDone(); }
+      catch (e) { if (e.name !== "AbortError") { $("need").textContent = "Couldn't open sharing: " + e.message; $("need").classList.add("err"); } }
+    } else {
+      // Fallback (desktop / older browsers): save photos, then open a pre-addressed email to attach them to.
+      files.forEach(f => {
+        const a = document.createElement("a"); a.href = URL.createObjectURL(f); a.download = f.name;
+        document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      });
+      location.href = `mailto:${encodeURIComponent(office())}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body() + "\n\n(Attach the saved photos.)")}`;
+      showDone();
+    }
+  });
+
+  function showDone() { $("doneAddr").textContent = office(); $("done").showModal(); }
+  function resetField(id) { $(id).value = ""; $(id + "Box").classList.remove("ok"); $(id + "Status").textContent = ""; }
+  function clearSample() {
+    photos.forEach(p => URL.revokeObjectURL(p.url)); photos = [];
+    resetField("sample"); resetField("drum"); $("note").value = "";
+    renderPhotos(); changed(); window.scrollTo(0, 0);
+  }
+  $("nextSample").onclick = () => { $("done").close(); clearSample(); };
+  $("goBack").onclick = () => $("done").close();
+  $("clearBtn").onclick = () => {
+    const hasWork = photos.length || val("load") || val("sample") || val("drum") || val("note");
+    if (hasWork && !confirm("Clear everything and start over?")) return;
+    resetField("load"); clearSample();
+  };
+
+  // ---------- app install ----------
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let deferredPrompt = null;
+  const dismissed = () => { const t = +load("lp_install_dismissed", 0); return Date.now() - t < 3 * 24 * 3600 * 1000; };
+  function showInstall(text) {
+    if (standalone || dismissed()) return;
+    $("installText").textContent = text;
+    $("install").classList.add("show");
+  }
+  const isChromeIOS = /CriOS/.test(navigator.userAgent);
+  function openHowto() {
+    $("stepsChrome").hidden = !isChromeIOS; $("stepsSafari").hidden = isChromeIOS;
+    $("openSafari").href = "x-safari-" + location.href.split("#")[0];
+    $("howto").showModal();
+  }
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; showInstall("Opens like an app — one tap from the home screen."); });
+  $("homeBtn").onclick = openHowto;
+  $("howtoClose").onclick = () => $("howto").close();
+  if (isIOS && !standalone) $("homeWrap").hidden = false;
+  $("installYes").onclick = async () => {
+    if (!deferredPrompt) { openHowto(); return; }
+    deferredPrompt.prompt();
+    try { await deferredPrompt.userChoice; } catch (e) {}
+    deferredPrompt = null; $("install").classList.remove("show");
+  };
+  $("installNo").onclick = () => { save("lp_install_dismissed", Date.now()); $("install").classList.remove("show"); };
+  window.addEventListener("appinstalled", () => $("install").classList.remove("show"));
+  if (isIOS && !standalone) { showInstall("Opens like an app — one tap from the home screen."); $("installYes").textContent = "Show me how"; }
+
+  // ---------- offline support ----------
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+  }
+
+  renderPhotos(); updateSend(); showOffice();
+  if (!officeKey()) $("officePick").showModal();
+})();
+</script>
+</body>
+</html>
