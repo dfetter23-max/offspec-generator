@@ -46,6 +46,11 @@
     ],
     "redirects": [
       {
+        "source": "/aging-drums",
+        "destination": "/aging-drums.html",
+        "type": 301
+      },
+      {
         "source": "/",
         "destination": "/dashboard.html",
         "type": 302

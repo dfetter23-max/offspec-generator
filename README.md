@@ -31,7 +31,7 @@ To update it, copy the new `javascript:` link into the install page's drag butto
 
 ## Aging Drums Report
 
-`public/Aging-Drums-Report.html` (small card under Drum Photo Setup, Millington only). Drop the SAP
+`public/aging-drums.html`, address **ec-receiving.web.app/aging-drums** (small card under Drum Photo Setup, Millington only). Drop the SAP
 All_Aging_Drums export in; it keeps drums 6+ months old (whole months from the date in the file name)
 and builds one Excel/printout per plant area. Area code rules are saved per browser; use Export/Import
 rules to move them between computers. Everything runs in the browser.
