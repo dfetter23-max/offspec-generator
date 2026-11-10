@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<script>
+// If the dashboard was opened at a wrong address (e.g. "dashboard.html/" from an old bookmark),
+// jump to the real one so every card's link works.
+if (location.pathname !== "/dashboard.html") location.replace("/dashboard.html" + location.search + location.hash);
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Receiving Tools — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
