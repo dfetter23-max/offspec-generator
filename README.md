@@ -29,6 +29,13 @@ The live install page is `public/hcode-export.html` (linked from the dashboard).
 the bookmarklet code. The source pages live at the repo root (`hcodes_interactive_bookmarklet_v*.html`).
 To update it, copy the new `javascript:` link into the install page's drag button and update the version label.
 
+## Aging Drums Report
+
+`public/Aging-Drums-Report.html` (small card under Drum Photo Setup, Millington only). Drop the SAP
+All_Aging_Drums export in; it keeps drums 6+ months old (whole months from the date in the file name)
+and builds one Excel/printout per plant area. Area code rules are saved per browser; use Export/Import
+rules to move them between computers. Everything runs in the browser.
+
 ## Archive
 
 `archive/` holds retired pages that are no longer deployed. Their old addresses redirect.
