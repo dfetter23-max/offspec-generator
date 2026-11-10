@@ -1,5 +1,5 @@
 // Lab Photo — offline support. Bump VERSION whenever any app file changes.
-const VERSION = "lab-photo-v1";
+const VERSION = "lab-photo-v2";
 const FILES = [
   "./",
   "./index.html",

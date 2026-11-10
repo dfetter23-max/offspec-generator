@@ -175,6 +175,7 @@
   <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
   <div class="btns">
     <button class="btn go" id="nextSample">Next sample — same load</button>
+    <button class="btn" id="newLoad">New load — start over</button>
     <button class="btn alt" id="goBack">Back — didn't send</button>
   </div>
 </dialog>
@@ -389,6 +390,7 @@
     renderPhotos(); changed(); window.scrollTo(0, 0);
   }
   $("nextSample").onclick = () => { $("done").close(); clearSample(); };
+  $("newLoad").onclick = () => { $("done").close(); resetField("load"); clearSample(); };
   $("goBack").onclick = () => $("done").close();
   $("clearBtn").onclick = () => {
     const hasWork = photos.length || val("load") || val("sample") || val("drum") || val("note");
