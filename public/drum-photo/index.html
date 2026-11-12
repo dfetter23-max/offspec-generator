@@ -188,7 +188,7 @@
     TN: { name: "Millington",   email: "TN.ReceivingGroup@tradebe.com" }
   };
 
-  const ISSUES = ["INNER CONTAINERS", "POWDER", "PAINT CANS", "OTHER"];
+  const ISSUES = ["INNER CONTAINERS", "POWDER", "PAINT CANS", "PHYSICAL STATE", "DRUM SIZE/TYPE", "OTHER"];
   const MAX_PHOTOS = 5, MAX_SIDE = 1600, JPEG_Q = 0.82;
   const DRUM_RE = /^D\d{9}$/;
 
@@ -390,8 +390,8 @@
   const issueList = () => ISSUES.filter(i => picked.has(i)).join(", ");
   function subject() {
     const parts = ["Drum Photo"];
+    if (loadNo()) parts.push("L#" + loadNo());
     if (drumNo()) parts.push(drumNo());
-    if (loadNo()) parts.push("Load " + loadNo());
     parts.push(issueList());
     return parts.join(" – ");
   }
