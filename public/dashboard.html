@@ -5,7 +5,8 @@
 <script>
 // If the dashboard was opened at a wrong address (e.g. "dashboard.html/" from an old bookmark),
 // jump to the real one so every card's link works.
-if (location.pathname !== "/dashboard.html") location.replace("/dashboard.html" + location.search + location.hash);
+// Only on the live site, so a copy opened from a PC folder still works.
+if (/\.(web\.app|firebaseapp\.com)$/.test(location.hostname) && location.pathname !== "/dashboard.html") location.replace("/dashboard.html" + location.search + location.hash);
 </script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Receiving Tools — Dashboard</title>
@@ -242,6 +243,23 @@ a { color: inherit; text-decoration: none; }
   color: var(--accent, var(--amber));
 }
 .card .foot .arrow { transition: transform .14s; }
+/* Cards marked data-lock="EC" are greyed out for those offices and need a manager password */
+.card .lockpill { display: none; }
+.card.locked { filter: grayscale(1); opacity: .5; }
+.card.locked:hover { transform: none; opacity: .7; }
+.card.locked .pill:not(.lockpill) { display: none; }
+.card.locked .lockpill { display: block; }
+.mgr-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.mgr-overlay[hidden] { display: none; }
+.mgr-box { width: min(380px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 22px; box-shadow: 0 20px 60px rgba(0,0,0,.5); }
+.mgr-box h4 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.mgr-box p { font-size: 13px; color: var(--muted); margin-bottom: 14px; }
+.mgr-box input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 15px; }
+.mgr-box input:focus { outline: none; border-color: var(--blue); }
+.mgr-err { color: var(--pink); font-size: 12px; min-height: 18px; margin-top: 8px; }
+.mgr-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.mgr-row button { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.mgr-row button.go { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
 .card:hover .foot .arrow { transform: translateX(3px); }
 
 .pill {
@@ -555,8 +573,9 @@ footer.site a:hover { color: var(--ink); }
             <span class="foot">Open <span class="arrow">&#8599;</span></span>
           </a>
 
-          <a class="card a-blue" href="Processing-Sheets-Scanner.html" target="_blank" rel="noopener">
+          <a class="card a-blue" data-lock="EC" href="Processing-Sheets-Scanner.html" target="_blank" rel="noopener">
             <span class="pill">v1.2</span>
+            <span class="pill lockpill">&#128274; Manager</span>
             <span class="icon">&#128203;</span>
             <h3>Processing Sheets Scanner</h3>
             <p>Drop scanned processing sheets and it reads every drum barcode into Excel, named by date, tank and shift (East Chicago: the File Room sheet; Millington: a drum number list). Click any missed or doubtful label to zoom in and fix it.</p>
@@ -729,6 +748,10 @@ function getSite() {
     document.querySelectorAll('a[data-offspec]').forEach(function (a) {
       a.href = 'Offspec-Generator.html?site=' + site;
     });
+    // Cards marked data-lock="EC" need a manager password at those offices
+    document.querySelectorAll('[data-lock]').forEach(function (el) {
+      el.classList.toggle('locked', el.getAttribute('data-lock').split(',').indexOf(site) >= 0);
+    });
     // Cards marked data-sites="EC,WI" only show for those offices
     document.querySelectorAll('[data-sites]').forEach(function (el) {
       el.hidden = el.getAttribute('data-sites').split(',').indexOf(site) < 0;
@@ -740,6 +763,56 @@ function getSite() {
     if (window.onSiteChange) window.onSiteChange(pick.value);
   });
   apply(getSite());
+})();
+
+// ── Manager approval for locked cards ──
+// Passwords are kept only as SHA-256 fingerprints (this page's code is public). Case doesn't matter.
+(function () {
+  var OK = ['cd61b689449d514bf5b9bc8c8048ce8bc6c17c64faddd1c4d16d79140e463b8e','9b9654823317084b2866d2312c25a806f643bdaa96413201f73367b2ab4df024','360165c2ef0fe425d7acfd775210cb14ffd7815585e109234e72d0785762df06','c036f224f646ca0c1f391eac903023a0abbd8068a9dbbc7391309329c911070d'];
+  function sha256(str) {
+    var K = [], H = [], p = 2, n = 0;
+    function frac(x) { return ((x - Math.floor(x)) * 4294967296) | 0; }
+    while (n < 64) { for (var d = 2; d * d <= p; d++) if (p % d === 0) break; if (d * d > p) { if (n < 8) H[n] = frac(Math.pow(p, 1/2)); K[n++] = frac(Math.pow(p, 1/3)); } p++; }
+    var bytes = unescape(encodeURIComponent(str)), words = [], l = bytes.length * 8;
+    for (var i = 0; i < bytes.length; i++) words[i >> 2] |= bytes.charCodeAt(i) << (24 - (i % 4) * 8);
+    words[l >> 5] |= 0x80 << (24 - l % 32); words[(((l + 64) >> 9) << 4) + 15] = l;
+    var r = function (x, c) { return (x >>> c) | (x << (32 - c)); };
+    for (var j = 0; j < words.length; j += 16) {
+      var w = [], a = H.slice(0);
+      for (var t = 0; t < 64; t++) {
+        if (t < 16) w[t] = words[j + t] | 0;
+        else { var s0 = r(w[t-15], 7) ^ r(w[t-15], 18) ^ (w[t-15] >>> 3), s1 = r(w[t-2], 17) ^ r(w[t-2], 19) ^ (w[t-2] >>> 10); w[t] = (w[t-16] + s0 + w[t-7] + s1) | 0; }
+        var e = a[4], t1 = (a[7] + (r(e, 6) ^ r(e, 11) ^ r(e, 25)) + ((e & a[5]) ^ (~e & a[6])) + K[t] + w[t]) | 0;
+        var t2 = ((r(a[0], 2) ^ r(a[0], 13) ^ r(a[0], 22)) + ((a[0] & a[1]) ^ (a[0] & a[2]) ^ (a[1] & a[2]))) | 0;
+        a = [(t1 + t2) | 0].concat(a.slice(0, 7)); a[4] = (a[4] + t1) | 0;
+      }
+      for (t = 0; t < 8; t++) H[t] = (H[t] + a[t]) | 0;
+    }
+    return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+  }
+  var box = document.createElement('div');
+  box.className = 'mgr-overlay'; box.hidden = true;
+  box.innerHTML = '<form class="mgr-box" autocomplete="off"><h4>Waiting for approval</h4><p>Please enter Manager password:</p>' +
+    '<input type="password" aria-label="Manager password"><div class="mgr-err"></div>' +
+    '<div class="mgr-row"><button type="button" class="cancel">Cancel</button><button type="submit" class="go">Open</button></div></form>';
+  document.body.appendChild(box);
+  var form = box.querySelector('form'), input = box.querySelector('input'), err = box.querySelector('.mgr-err'), target = null;
+  function close() { box.hidden = true; input.value = ''; err.textContent = ''; target = null; }
+  box.querySelector('.cancel').addEventListener('click', close);
+  box.addEventListener('click', function (e) { if (e.target === box) close(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) close(); });
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (OK.indexOf(sha256(input.value.trim().toLowerCase())) < 0) { err.textContent = 'Incorrect password.'; input.select(); return; }
+    var href = target; close();
+    window.open(href, '_blank', 'noopener');
+  });
+  document.addEventListener('click', function (e) {
+    var card = e.target.closest && e.target.closest('a.card.locked');
+    if (!card) return;
+    e.preventDefault();
+    target = card.getAttribute('href'); box.hidden = false; input.focus();
+  }, true);
 })();
 
 // ── Announcements (Firebase-synced, admin-editable, one per office) ──────
