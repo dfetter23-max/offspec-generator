@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Manifest Printer — Create Job</title>
   <style>
+    .discrepancy-card.section-off .fields{opacity:.45;pointer-events:none;filter:grayscale(1)}.inline-check[hidden]{display:none!important}.discrepancy-card .section-off-note{margin:12px 16px 0;font-weight:700;color:#5a6b77}
     :root{--navy:#132a44;--blue:#1769aa;--pale:#eef4f8;--line:#c8d4df;--ink:#17212b;--good:#19734b}
     *{box-sizing:border-box}[hidden]{display:none!important} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#aebfcc}
     header{height:66px;background:var(--navy);color:#fff;display:flex;align-items:center;padding:0 22px;gap:18px;box-shadow:0 2px 10px #0004}
@@ -141,7 +142,7 @@
       <p class="sync-note">Prints with “**SIGNED ON BEHALF OF” and “SEE ATTACHED MANIFEST FOR SIGNATURES.”</p>
       <div class="date-row"><label>Month<input data-field="t2Month" maxlength="2"></label><label>Day<input data-field="t2Day" maxlength="2"></label><label>Year<input data-field="t2Year" maxlength="4"></label><button type="button" id="t2CalendarBtn" title="Choose Transporter 2 date" aria-label="Choose Transporter 2 date">🗓</button></div>
     </div></div>
-    <div class="card" data-preview-y="76"><h2>18a. Discrepancy</h2><div class="fields">
+    <div class="card discrepancy-card" data-preview-y="76"><h2>18a. Discrepancy</h2><p class="sync-note rejection-only section-off-note">Not used on Rejection manifests — Section 18a prints blank.</p><div class="fields">
       <label class="wide rejection-only">Indicator / discrepancy note<input data-field="discrepancyIndicator"></label>
       <div class="check-list manual-discrepancy">
         <label><input type="checkbox" data-field="checkQuantity"> Quantity</label>
@@ -161,8 +162,7 @@
         <label>Moved from Manifest #<input disabled></label>
       </div>
       <label class="wide">Manifest reference number<input class="synced-field" data-field="manifestReference" readonly></label>
-      <p class="sync-note rejection-only">Rejection type and manifest reference are copied automatically from Section 14.</p>
-    </div></div>
+          </div></div>
     <div class="card method-section" data-preview-y="88"><h2>19. Waste management method</h2><div class="fields">
       <label>1. H-Code<input data-field="hCode1"></label>
       <label>2. H-Code<input data-field="hCode2"></label>
@@ -423,6 +423,7 @@ Chicago, IL 60604</div>
     // Blank manifests use the same five Section 18a coordinates as every
     // other form, but intentionally print a heavier double-X in checked boxes.
     if(blank)['checkQuantity','checkType','checkResidue','checkPartial','checkFull'].forEach(name=>setOutput(name,values[name]==='X'?'XX':''));
+    if(rejectionMode){['checkQuantity','checkType','checkResidue','checkPartial','checkFull'].forEach(name=>{document.querySelector(`[data-field="${name}"]`).checked=false;setOutput(name,'')});['discrepancyIndicator','manifestReference'].forEach(name=>{document.querySelector(`[data-field="${name}"]`).value='';setOutput(name,'')})}
     offerorCircle.style.display=!nonHaz&&values.circleOfferor==='X'?'block':'none';
     const required=blank?[]:nonHaz?['generatorId','generatorAddress','generatorPhone','emergencyPhone']:['emergencyPhone','facilityAddress','facilityPhone','facilityId'];
     ['generatorId','generatorAddress','generatorPhone','emergencyPhone','facilityAddress','facilityPhone','facilityId'].forEach(name=>{
@@ -584,6 +585,9 @@ Chicago, IL 60604</div>
     document.querySelectorAll('.blank-only').forEach(el=>el.hidden=!blank);
     document.querySelectorAll('.standard-special').forEach(el=>el.hidden=blank);
     document.querySelector('.manual-discrepancy').hidden=nonHaz;
+    // Rejection manifests leave Section 18a empty: grey it out and lock its inputs.
+    document.querySelector('.discrepancy-card').classList.toggle('section-off',rejectionMode);
+    document.querySelectorAll('.discrepancy-card input').forEach(el=>{if(el.closest('.blank-only'))return;el.disabled=rejectionMode});
     document.querySelector('.method-section').hidden=false;
     document.getElementById('transporterDetails').open=nonHaz;
     document.querySelector('.offeror-x-option').hidden=nonHaz;
