@@ -36,6 +36,24 @@
             "value": "0"
           }
         ]
+      },
+      {
+        "source": "/drum-relabel/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      },
+      {
+        "source": "/Drum-Relabel-Setup.html",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
       }
     ],
     "rewrites": [
