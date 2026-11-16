@@ -39,7 +39,7 @@ rules to move them between computers. Everything runs in the browser.
 ## Drum Relabel
 
 `public/drum-relabel/`, address **ec-receiving.web.app/drum-relabel** (printable phone card: `public/Drum-Relabel-Setup.html`,
-linked under Phone Apps). On the iPhone: choose the barcode photos of the fixed drums. They're read in the order
+not linked from the dashboard). On the iPhone: choose the barcode photos of the fixed drums. They're read in the order
 taken (camera time, else file name), unreadable ones are typed in place, and **Open in Outlook** emails the
 drum list. On the office PC: **Paste list from email**, paste the same list into SAP's multiple selection,
 then drop SAP's label PDF in step 3. Only labels for drums on the list are kept, in list order, ready to print.
