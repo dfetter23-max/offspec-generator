@@ -132,7 +132,7 @@
     <div class="lbl">Issue — tap all that apply</div>
     <div id="issues" class="chips"></div>
     <label for="note" style="margin-top:14px">Note <span id="noteReq" style="font-weight:400;color:var(--muted)">(optional)</span></label>
-    <textarea id="note" rows="2" placeholder="Anything the office should know"></textarea>
+    <textarea id="note" rows="2" autocapitalize="characters" placeholder="ANYTHING THE OFFICE SHOULD KNOW"></textarea>
   </section>
 
   <div class="homewrap" id="homeWrap" hidden><button type="button" class="homebtn" id="homeBtn">📲 Add to Home Screen</button></div>
@@ -353,7 +353,12 @@
     setTimeout(() => $("loadBox").scrollIntoView({ block: "center", behavior: "smooth" }), 300);
   });
   $("load").addEventListener("blur", () => document.body.classList.remove("typing"));
-  $("note").addEventListener("input", changed);
+  // Notes are always ALL CAPS, whatever the keyboard does.
+  $("note").addEventListener("input", e => {
+    const el = e.target, up = el.value.toUpperCase();
+    if (el.value !== up) { const a = el.selectionStart, z = el.selectionEnd; el.value = up; try { el.setSelectionRange(a, z); } catch (x) {} }
+    changed();
+  });
 
   const val = id => $(id).value.trim();
   const drumNo = () => { const d = $("drum").value.replace(/\D/g, ""); return d ? "D" + d : ""; };
