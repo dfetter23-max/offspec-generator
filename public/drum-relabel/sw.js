@@ -1,5 +1,5 @@
 // Drum Relabel — offline support. Bump VERSION whenever any app file changes.
-const VERSION = "drum-relabel-v2";
+const VERSION = "drum-relabel-v3";
 const FILES = [
   "./",
   "./index.html",

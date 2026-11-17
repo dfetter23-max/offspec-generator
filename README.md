@@ -40,9 +40,13 @@ rules to move them between computers. Everything runs in the browser.
 
 `public/drum-relabel/`, address **ec-receiving.web.app/drum-relabel** (printable phone card: `public/Drum-Relabel-Setup.html`,
 not linked from the dashboard). On the iPhone: choose the barcode photos of the fixed drums. They're read in the order
-taken (camera time, else file name), unreadable ones are typed in place, and **Open in Outlook** emails the
-drum list. On the office PC: **Paste list from email**, paste the same list into SAP's multiple selection,
+taken (camera time, else file name), unreadable ones are typed in place, and the list is sent to the office PC
+automatically. On the office PC the list loads by itself: **Copy list**, paste it into SAP's multiple selection,
 then drop SAP's label PDF in step 3. Only labels for drums on the list are kept, in list order, ready to print.
+The finished list is shared through Firestore (`drumRelabel/current`, falling back to `ui/drumRelabel` if the rules
+don't allow that collection): the phone saves it automatically and the office computer loads it live, so no email is
+needed. One record, last save wins (one person runs a job at a time). If Firebase can't be reached, the phone falls
+back to Open in Outlook and the computer to Paste list from email.
 The barcode reader (zxing-cpp WebAssembly), pdf.js, pdf-lib and JSZip are inlined, so `index.html` is one
 self-contained file that also works opened straight from disk. Bump `VERSION` in its `sw.js` when it changes.
 
