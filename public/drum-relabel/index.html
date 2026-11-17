@@ -149,7 +149,7 @@
   <div class="row" style="margin-top:10px">
     <label class="desk">Order by
       <select id="sortMode">
-        <option value="auto">Time taken (camera), else file name</option>
+        <option value="auto">Camera time taken (default)</option>
         <option value="name">File name (IMG_0001, IMG_0002…)</option>
         <option value="filetime">File date</option>
         <option value="added">Manual / order added</option>
@@ -229,6 +229,9 @@
   </table>
 </section>
 
+<footer class="desk" style="max-width:1150px;margin:0 auto;padding:4px 16px 18px;text-align:right;font-size:11.5px">
+  <a href="https://ec-receiving.web.app/Drum-Relabel-Setup.html" target="_blank" rel="noopener" style="color:#9aa3b2;text-decoration:none">Phone setup card ↗</a>
+</footer>
 </main>
 <div id="sendBar"><span id="sendInfo"></span><button class="primary" id="sendBtn">Send to office</button></div>
 <div id="zoom"><img alt=""></div>
@@ -343,7 +346,7 @@ let addedCounter = items.reduce((m,i)=>Math.max(m,i.added||0),0);
 let orderedPdfBytes = null, orderedUrl = null;
 let showAll = store.get('showAll', false);
 
-$('#sortMode').value = store.get('sortMode', 'auto');
+$('#sortMode').value = items.length ? store.get('sortMode', 'auto') : 'auto';   // a new list always starts in camera-time order
 if(![...$('#sortMode').options].some(o=>o.value===$('#sortMode').value)) $('#sortMode').value = 'auto';
 $('#drumRegex').value = store.get('drumRegex', '^D\\d{9}$');
 $('#stripChars').value = store.get('stripChars', '');
@@ -543,6 +546,8 @@ async function addFiles(files){
   $('#okSummary').innerHTML = '<span class="big">Loading photos…</span>';
   files = (await expandZips([...files])).filter(f => f.type.startsWith('image/') || IMG_RE.test(f.name));
   if(!files.length){ prog0.style.display='none'; return; }
+  // first photos of a new batch: back to camera-time order, whatever the last batch used
+  if(!items.some(i => !i.manual) && $('#sortMode').value !== 'auto'){ $('#sortMode').value = 'auto'; store.set('sortMode', 'auto'); }
   const fresh = [];
   for(const f of files) fresh.push({id: 'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
     name: f.name, time: f.lastModified, taken: await exifTaken(f), added: ++addedCounter, value:'', candidates:[], status:'pending', _file:f, thumb:null});
@@ -733,6 +738,7 @@ $('#fxImg').onclick = () => $('#fxImgWrap').classList.toggle('zoomed');
 function clearList(ask){
   if(ask && items.length && !confirm('Start a new list? This removes all '+items.length+' drums currently in the list.')) return;
   items = []; addedCounter = 0; orderedPdfBytes = null; lastPdf = null;
+  $('#sortMode').value = 'auto'; store.set('sortMode', 'auto');
   $('#sapList').value = ''; $('#listMsg').innerHTML = ''; $('#pdfMsg').innerHTML = '';
   $('#matchTable').style.display = 'none'; $('#openPdf').disabled = $('#savePdf').disabled = true;
   $('#resumeBanner').style.display = 'none';
