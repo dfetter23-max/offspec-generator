@@ -36,7 +36,7 @@ All_Aging_Drums export in; it keeps drums 6+ months old (whole months from the d
 and builds one Excel/printout per plant area. Area code rules are saved per browser; use Export/Import
 rules to move them between computers. Everything runs in the browser.
 
-## Drum Relabel
+## Q Scanner Tool (drum relabel)
 
 `public/drum-relabel/`, address **ec-receiving.web.app/drum-relabel** (printable phone card: `public/Drum-Relabel-Setup.html`,
 not linked from the dashboard). On the iPhone: choose the barcode photos of the fixed drums. They're read in the order

@@ -1,6 +1,6 @@
 {
-  "name": "Drum Relabel",
-  "short_name": "Drum Relabel",
+  "name": "Q Scanner Tool",
+  "short_name": "Q Scanner",
   "description": "Read drum barcode photos into an ordered list for SAP, then put the new label PDF in that order.",
   "id": "./",
   "start_url": "./",
