@@ -641,9 +641,18 @@ function render(){
   if(typeof cloudUI === 'function') cloudUI();
   if(typeof recallUI === 'function') recallUI();
   $('#listInfo').innerHTML = (missing ? `<div class="msg bad">${missing} photo(s) have no number yet and are left out of this list. Use <b>Type unread numbers</b> in step 1 so those drums get labels.</div>` : '') +
-    (vals.length ? `<p><b>${vals.length}</b> drum numbers in order.</p>
+    (!vals.length ? '<p>No drum numbers yet.</p>' : isPhone()
+    ? `<p><b>${vals.length}</b> drum numbers in order.</p>
+    <p><b>Next, on the office computer:</b></p>
+    <ol style="margin:4px 0 10px;padding-left:20px;line-height:1.5">
+      <li>Open the <b>Q Manager Dashboard</b> and click <b>Q Scanner Tool</b> in the left menu. This list is already there.</li>
+      <li>Click <b>Copy list</b> and paste it into SAP to make the new labels.</li>
+      <li>Save the labels as a <b>PDF</b> (don't print from SAP), then drag the PDF into the tool and print. The labels come out in scan order.</li>
+    </ol>
+    <p>The list is saved here and online, so you can close this app.</p>`
+    : `<p><b>${vals.length}</b> drum numbers in order.</p>
     <p>SAP: open the multiple selection (➡ arrow next to the field), click <i>Upload from Clipboard</i> (or paste with Ctrl+V into the first cell), then execute.</p>
-    <p>The list is kept here and online, so you can close the page while SAP makes the labels and come back for step 3.</p>` : '<p>No drum numbers yet.</p>');
+    <p>The list is kept here and online, so you can close the page while SAP makes the labels and come back for step 3.</p>`);
 }
 function move(i, d){
   const j = i+d; if(j<0||j>=items.length) return;
