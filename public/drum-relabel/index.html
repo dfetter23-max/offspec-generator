@@ -118,6 +118,8 @@
   #resumeBanner{border:2px solid var(--warn);background:#fffaf2}
   body.cloudOn .fallback{display:none!important}
   #sendBtn.sent{background:#e6f4ea;border-color:#b7dfc3;color:var(--ok)}
+  .recall{font-size:13px;color:var(--mute);margin:2px 0 10px}
+  .recall a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
   button.office.on{background:#1f3a5f;border-color:#1f3a5f;color:#fff}
   .choices{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
   .choices button{font-family:Consolas,monospace;font-size:11.5px;padding:1px 6px}
@@ -139,6 +141,7 @@
 <!-- STEP 1 -->
 <section class="card">
   <h2><span class="step">1</span>Barcode photos</h2>
+  <div id="recallBar" class="recall" style="display:none"></div>
   <p class="hint">Drop the drum barcode photos. They're put in the order they were taken, then read. If a barcode can't be read, type the number in its box (or use <b>Type unread numbers</b>). It stays in that photo's spot. Use <b>+</b> on a row to add a drum that has no photo, right below that row.</p>
   <div class="drop" id="imgDrop">
     <button class="primary big" id="pickPhotos" type="button">Choose photos</button>
@@ -546,6 +549,9 @@ async function addFiles(files){
   $('#okSummary').innerHTML = '<span class="big">Loading photos…</span>';
   files = (await expandZips([...files])).filter(f => f.type.startsWith('image/') || IMG_RE.test(f.name));
   if(!files.length){ prog0.style.display='none'; return; }
+  // photos chosen well after the last list was finished: that list is done, start a new one
+  const lastChange = store.get('savedAt', 0);
+  if(items.length && !items.some(i => i.status === 'pending') && lastChange && Date.now() - lastChange > NEW_BATCH_MS) archiveLocal();
   // first photos of a new batch: back to camera-time order, whatever the last batch used
   if(!items.some(i => !i.manual) && $('#sortMode').value !== 'auto'){ $('#sortMode').value = 'auto'; store.set('sortMode', 'auto'); }
   const fresh = [];
@@ -633,6 +639,7 @@ function render(){
   document.body.classList.toggle('hasList', vals.length > 0 && !pendingN);
   $('#sendInfo').innerHTML = `<b>${vals.length}</b> drum${vals.length===1?'':'s'}` + (missing ? ` · <span style="color:var(--bad)">${missing} missing</span>` : '') + `<br><span id="cloudChip"></span>`;
   if(typeof cloudUI === 'function') cloudUI();
+  if(typeof recallUI === 'function') recallUI();
   $('#listInfo').innerHTML = (missing ? `<div class="msg bad">${missing} photo(s) have no number yet and are left out of this list. Use <b>Type unread numbers</b> in step 1 so those drums get labels.</div>` : '') +
     (vals.length ? `<p><b>${vals.length}</b> drum numbers in order.</p>
     <p>SAP: open the multiple selection (➡ arrow next to the field), click <i>Upload from Clipboard</i> (or paste with Ctrl+V into the first cell), then execute.</p>
@@ -735,25 +742,55 @@ $('#fxSave').onclick = () => {
 };
 $('#fxInput').addEventListener('keydown', e => { if(e.key === 'Enter') $('#fxSave').click(); if(e.key === 'Escape') closeFixer(); });
 $('#fxImg').onclick = () => $('#fxImgWrap').classList.toggle('zoomed');
-function clearList(ask){
-  if(ask && items.length && !confirm('Start a new list? This removes all '+items.length+' drums currently in the list.')) return;
+const STALE_MS = 8*3600e3;      // a list older than a shift is put away when the app opens
+const NEW_BATCH_MS = 30*60e3;   // choosing photos this long after the last change starts a new list
+function resetList(){
   items = []; addedCounter = 0; orderedPdfBytes = null; lastPdf = null;
   $('#sortMode').value = 'auto'; store.set('sortMode', 'auto');
   $('#sapList').value = ''; $('#listMsg').innerHTML = ''; $('#pdfMsg').innerHTML = '';
   $('#matchTable').style.display = 'none'; $('#openPdf').disabled = $('#savePdf').disabled = true;
   $('#resumeBanner').style.display = 'none';
-  save(); render(); window.scrollTo(0,0);
+  save(); render();
+}
+// Keep the current list as "previous" (for Recall), then empty it on this device
+function archiveLocal(){
+  const drums = items.map(i => i.value).filter(Boolean);
+  if(drums.length) store.set('prevList', {drums, savedAtMs: store.get('savedAt', Date.now()), from: isPhone() ? 'phone' : 'computer'});
+  resetList();
+}
+function clearList(ask){
+  const n = items.filter(i => i.value).length;
+  if(ask && items.length && !confirm('Start a new list?\n\nThe current list ('+n+' drums) is cleared on the phone and the office computer. You can bring it back with "Recall previous list".')) return;
+  archiveLocal();
+  if(typeof cloudClear === 'function') cloudClear();
+  window.scrollTo(0,0);
 }
 $('#clearAll').onclick = () => clearList(true);
 $('#resumeNew').onclick = () => clearList(false);
 $('#resumeKeep').onclick = () => { $('#resumeBanner').style.display = 'none'; };
-// A list saved earlier is still here: ask whether to keep it
-(() => {
-  const n = items.filter(i => i.value).length, at = store.get('savedAt', 0);
-  if(!items.length) return;
-  $('#resumeText').innerHTML = `<b>A list from before is still loaded:</b> ${n} drum${n===1?'':'s'}` + (at ? `, saved ${new Date(at).toLocaleString([], {weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'})}` : '') + '.';
-  $('#resumeBanner').style.display = '';
-})();
+
+// "Recall previous list": newest list that isn't the one on screen
+function recallCandidate(){
+  const mine = items.map(i => i.value).filter(Boolean), d = (typeof CLOUD !== 'undefined' && CLOUD) ? CLOUD.last : null;
+  const c = [store.get('prevList', null), d && d.previous,
+             d && d.drums && d.drums.length && !mine.length ? d : null]
+    .filter(x => x && x.drums && x.drums.length && x.drums.join(',') !== mine.join(','));
+  c.sort((a, b) => (b.savedAtMs||0) - (a.savedAtMs||0));
+  return c[0] || null;
+}
+function recallUI(){
+  const r = recallCandidate(), bar = $('#recallBar');
+  if(!r || items.some(i => i.status === 'pending')){ bar.style.display = 'none'; return; }
+  const when = r.savedAtMs ? new Date(r.savedAtMs).toLocaleString([], {weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
+  bar.innerHTML = `<a id="recallBtn">↺ Recall previous list</a> · ${r.drums.length} drum${r.drums.length===1?'':'s'}${when ? ', ' + when : ''}`;
+  bar.style.display = '';
+  $('#recallBtn').onclick = () => {
+    if(items.length && !confirm('Replace the current list with the previous list ('+r.drums.length+' drums)?')) return;
+    if(items.some(i => i.value)) store.set('prevList', {drums: items.map(i => i.value).filter(Boolean), savedAtMs: store.get('savedAt', Date.now())});
+    useVals(r.drums.slice());
+    $('#listMsg').innerHTML = `<div class="msg ok">Recalled the previous list: <b>${r.drums.length}</b> drums${when ? ' from ' + when : ''}.</div>`;
+  };
+}
 $('#drumRegex').onchange = $('#stripChars').onchange = () => {
   store.set('drumRegex', $('#drumRegex').value); store.set('stripChars', $('#stripChars').value);
   if($('#drumRegex').value.trim() && !drumRe()) alert('That pattern is not a valid regular expression.');
@@ -860,7 +897,7 @@ wireDrop($('#pdfDrop'), $('#pdfInput'), files => { const f=[...files].find(f=>/p
 function msg(html, cls){ $('#pdfMsg').innerHTML += `<div class="msg ${cls}">${html}</div>`; }
 function escRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-let lastPdf = null;
+var lastPdf = null;
 $('#appendUnmatched').onchange = () => { if(lastPdf) processPdf(lastPdf); };
 async function processPdf(file){
   lastPdf = file;
@@ -966,7 +1003,7 @@ const FB_CFG = { apiKey: "AIzaSyDIGaQ4pCQh87axYflOMcj6-B5p_AwF_kg", authDomain: 
   projectId: "ec-receiving", storageBucket: "ec-receiving.firebasestorage.app", messagingSenderId: "1014911293414",
   appId: "1:1014911293414:web:7fe5896b07fc800d2aa827" };
 var CLOUD = { db:null, ref:null, fallback:false, last:null, state:'connecting', err:'', saving:false, unsub:null };
-const isPhone = () => /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent) || matchMedia('(max-width:640px)').matches;
+function isPhone(){ return /iPhone|iPod|Android.*Mobile/i.test(navigator.userAgent) || matchMedia('(max-width:640px)').matches; }
 const sameList = (a, b) => (a||[]).join(',') === (b||[]).join(',');
 const localDrums = () => items.map(i => i.value).filter(Boolean);
 const fmtTime = ms => ms ? new Date(ms).toLocaleString([], {weekday:'short', month:'numeric', day:'numeric', hour:'numeric', minute:'2-digit'}) : '';
@@ -995,7 +1032,7 @@ function cloudSubscribe(ref){
   CLOUD.unsub = ref.onSnapshot(snap => {
     CLOUD.state = 'on'; CLOUD.err = '';
     CLOUD.last = snap.exists ? snap.data() : null;
-    cloudReceived(); cloudUI();
+    cloudReceived(); cloudUI(); recallUI();
   }, err => {
     if(err && err.code === 'permission-denied' && cloudUseFallback()) return;
     CLOUD.state = 'off'; CLOUD.err = (err && err.code) || 'error'; cloudUI();
@@ -1012,19 +1049,45 @@ async function cloudSave(){
   CLOUD.saving = true; cloudUI();
   try{
     await CLOUD.ref.set({ drums, count: drums.length, missing: items.filter(i => !i.value).length,
-      savedAtMs: Date.now(), savedAt: firebase.firestore.FieldValue.serverTimestamp(), from: isPhone() ? 'phone' : 'computer' });
+      savedAtMs: Date.now(), savedAt: firebase.firestore.FieldValue.serverTimestamp(), from: isPhone() ? 'phone' : 'computer',
+      previous: cloudPrev() });
   }catch(e){
     if(e && e.code === 'permission-denied' && cloudUseFallback()){ CLOUD.saving = false; return cloudQueueSave(); }
     CLOUD.state = 'off'; CLOUD.err = (e && e.code) || 'save failed';
   }
   CLOUD.saving = false; cloudUI();
 }
+// The list being replaced or cleared becomes the shared "previous" list
+function cloudPrev(){
+  const cur = CLOUD.last;
+  if(cur && cur.drums && cur.drums.length) return {drums: cur.drums, savedAtMs: cur.savedAtMs || null, from: cur.from || ''};
+  return (cur && cur.previous) || null;
+}
+// "Start new list" on either device empties the shared list too
+async function cloudClear(){
+  if(!CLOUD || !CLOUD.ref || CLOUD.state !== 'on' || !(CLOUD.last && CLOUD.last.drums && CLOUD.last.drums.length)) return;
+  try{
+    await CLOUD.ref.set({ drums: [], count: 0, missing: 0, savedAtMs: Date.now(), clearedAtMs: Date.now(),
+      savedAt: firebase.firestore.FieldValue.serverTimestamp(), from: isPhone() ? 'phone' : 'computer', previous: cloudPrev() });
+  }catch(e){}
+}
 // A list arrived from the other device
 function cloudReceived(){
   const d = CLOUD.last;
-  if(!d || !d.drums || !d.drums.length || sameList(d.drums, localDrums())) return;
-  if(isPhone()) return;                                         // the phone is where lists are made
+  if(!d || !d.drums) return;
   if(items.some(i => i.status === 'pending')) return;
+  const mine = localDrums();
+  if(!d.drums.length){
+    // the other device started a new list: clear this one too if it still shows that same list
+    if(mine.length && d.previous && sameList(d.previous.drums, mine)){
+      archiveLocal();
+      $('#listMsg').innerHTML = '<div class="msg">A new list was started on the other device. Use <i>Recall previous list</i> to bring the old one back.</div>';
+    }
+    return;
+  }
+  if(sameList(d.drums, mine)) return;
+  if(isPhone()) return;                                         // the phone is where lists are made
+  if(Date.now() - (d.savedAtMs || 0) > STALE_MS){ recallUI(); return; }   // an old list: offer it, don't load it
   const hasPhotos = items.some(i => !i.manual);
   if(hasPhotos){ cloudUI(); return; }                           // someone is building a list here: offer, don't replace
   useVals(d.drums.slice());
@@ -1061,6 +1124,8 @@ function cloudUI(){
   } else { box.className = 'msg'; box.style.display = 'none'; }
 }
 
+// Opening the app on an old list: put it away so the app starts empty (it can still be recalled)
+{ const at = store.get('savedAt', 0); if(items.length && at && Date.now() - at > STALE_MS) archiveLocal(); }
 render();
 cloudInit();
 if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
