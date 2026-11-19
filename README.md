@@ -56,6 +56,8 @@ self-contained file that also works opened straight from disk. Bump `VERSION` in
 
 ## Version history
 
+- **7.3** (2026-11-18): Screenshot OCR keeps # in the US manifest number (dashes were already kept).
+  Standard EPA numbers (9 digits + 3 letters) are handled exactly as before.
 - **7.2** (2026-10-27): Q mode's "Q-Packet Guide" is now "Notification Attachments" and "Packet order" is
   "Attachment Order". All weight sheets show "Relevant weight sheets (only copies)",
   like analyticals (Z28 and Physical II no longer say "original"). The Manage button is at the bottom.
