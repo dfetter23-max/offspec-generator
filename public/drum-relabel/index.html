@@ -121,8 +121,6 @@
   .recall{font-size:13px;color:var(--mute);margin:2px 0 10px}
   .recall a{color:var(--accent);cursor:pointer;text-decoration:underline;font-weight:600}
   button.office.on{background:#1f3a5f;border-color:#1f3a5f;color:#fff}
-  .msg.celebrate{font-size:20px;padding:14px 16px;border:2px solid #b7dfc3}
-  .msg.celebrate span{font-size:14px;margin-left:6px}
   .choices{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px}
   .choices button{font-family:Consolas,monospace;font-size:11.5px;padding:1px 6px}
 </style>
@@ -986,7 +984,7 @@ async function processPdf(file){
   const fixedN = uniq.filter(v => (drumPages.get(v) || []).length).length;   // scanned drums that got a new label
   const keptN = outPages.length;
   if(fixedN){
-    $('#pdfMsg').innerHTML += `<div class="msg ok celebrate">🎉 <b>${fixedN} drum${fixedN===1?'':'s'} fixed!</b> <span>${fixedN===1?'Its label is':'Their labels are'} ready to print, in scan order.</span></div>`;
+    msg(`<b>${fixedN} drum${fixedN===1?'':'s'} fixed.</b> Labels ready to print, in scan order.`, 'ok');
   } else msg('None of the scanned drums have a label in this PDF. Check that it\'s the right PDF.', 'warn');
   if(unmatched.length && $('#appendUnmatched').checked) msg(`${unmatched.length} other label(s) added at the end.`, '');
   if(multiPages.length) msg(`${multiPages.length} page(s) contain more than one drum's label, so whole pages can't be put in exact drum order. Send a sample of this PDF and I'll add per-label cutting.`, 'warn');
