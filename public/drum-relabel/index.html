@@ -978,7 +978,7 @@ async function processPdf(file){
     tr.innerHTML = `<td class="seq">${n}</td><td style="font-family:Consolas,monospace">${esc(v)}</td><td>${pg}</td><td><span class="tag ${cls}">${txt}</span></td>`; tb.appendChild(tr); });
   if(unmatched.length && $('#appendUnmatched').checked) unmatched.forEach(p => { const tr=document.createElement('tr');
     tr.innerHTML = `<td class="seq"></td><td class="stats">—</td><td>${p+1}</td><td><span class="tag">Not on list — added at end</span></td>`; tb.appendChild(tr); });
-  $('#matchTable').style.display='';
+  // (the per-drum table is no longer shown; problems are named in the messages above the buttons)
 
   const missing = rows.filter(r=>r[3]==='bad').length;
   const okN = rows.filter(r=>r[3]==='ok').length;
@@ -987,7 +987,8 @@ async function processPdf(file){
   if(!missing && !multiPages.length) msg(`All ${uniq.length} listed drums found — ${keptN} page(s) ready to print, in list order.${otherNote}`, 'ok');
   else{
     if(okN) msg(`${okN} drum(s) matched.${otherNote}`, 'ok');
-    if(missing) msg(`${missing} drum(s) on the list have no label in this PDF — see the red rows below.`, 'bad');
+    if(missing){ const nums = rows.filter(r => r[3]==='bad').map(r => r[1]);
+      msg(`${missing} drum(s) on the list have no label in this PDF: <b style="font-family:Consolas,monospace">${nums.map(esc).join(', ')}</b>`, 'bad'); }
     if(multiPages.length) msg(`${multiPages.length} page(s) contain more than one drum's label, so whole pages can't be put in exact drum order. Send a sample of this PDF and I'll add per-label cutting.`, 'warn');
   }
 
