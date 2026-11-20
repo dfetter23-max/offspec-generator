@@ -1,5 +1,5 @@
 // Q Scanner Tool — offline support. Bump VERSION whenever any app file changes.
-const VERSION = "drum-relabel-v11";
+const VERSION = "drum-relabel-v12";
 const FILES = [
   "./",
   "./index.html",
