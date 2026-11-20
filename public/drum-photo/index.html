@@ -81,6 +81,11 @@
   button,.bigbtn,.chip{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   .officeline{text-align:center;color:var(--muted);font-size:15px;margin:4px 0 8px}
   .officeline b{color:var(--ink)}
+  .setlbl{font-size:14px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg button{min-height:54px;border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:12px;font-size:18px;font-weight:800;cursor:pointer}
+  .seg button.on{background:var(--brand);border-color:var(--brand);color:#fff}
+  .btn:disabled{background:#9aa4b1;cursor:default}
   .homewrap{text-align:center;margin:6px 0 10px}
   .homewrap[hidden]{display:none}
   .homebtn{border:2px solid var(--brand);background:#fff;color:var(--brand);font-size:19px;font-weight:800;border-radius:12px;padding:14px 22px;min-height:56px;cursor:pointer}
@@ -148,7 +153,7 @@
   </section>
 
   <div class="homewrap" id="homeWrap" hidden><button type="button" class="homebtn" id="homeBtn">📲 Add to Home Screen</button></div>
-  <div class="officeline">Sending to <b id="officeName">—</b> · <button type="button" class="linkbtn inline" id="officeChange">Change office</button></div>
+  <div class="officeline">Sending to <b id="officeName">—</b> by <b id="sendName">Outlook</b> · <button type="button" class="linkbtn inline" id="officeChange">Change</button></div>
 </main>
 
 <div class="sendbar">
@@ -176,14 +181,20 @@
 </dialog>
 
 <dialog id="officePick">
-  <h2>Which office?</h2>
-  <p>Photos from this phone will go to that office. You only pick once.</p>
-  <div class="btns" id="officeBtns"></div>
+  <h2>Phone setup</h2>
+  <p>Set once on each phone.</p>
+  <div class="setlbl">Office</div>
+  <div class="seg" id="officeBtns"></div>
+  <div class="setlbl">Send with</div>
+  <div class="seg" id="sendBtns"></div>
+  <p class="tip" id="sendTip" style="margin-top:12px"></p>
+  <div class="btns"><button type="button" class="btn go" id="setupDone">Done</button></div>
 </dialog>
 
 <dialog id="done">
   <h2>Sent?</h2>
   <p>Make sure it went to <span class="addr" id="doneAddr"></span></p>
+  <p class="tip" id="doneTip" hidden></p>
   <div class="btns">
     <button class="btn go" id="nextDrum">Next drum — same load</button>
     <button class="btn" id="newLoad">New load — start over</button>
@@ -413,9 +424,9 @@
   function updateSend() {
     const m = missing(), btn = $("send"), need = $("need");
     need.classList.remove("err");
-    if (m.length) { btn.disabled = true; btn.textContent = "Send to Office ✉"; need.textContent = "Needs " + m.join(", "); }
+    if (m.length) { btn.disabled = true; btn.textContent = sendLabel(); need.textContent = "Needs " + m.join(", "); }
     else if (!ready || ready.ver !== ver) { btn.disabled = true; btn.textContent = "Preparing…"; need.textContent = ""; }
-    else { btn.disabled = false; btn.textContent = "Send to Office ✉"; need.textContent = ""; }
+    else { btn.disabled = false; btn.textContent = sendLabel(); need.textContent = ""; }
   }
 
   // ---------- message text ----------
@@ -471,9 +482,11 @@
   async function processImage(p, cap, name) {
     const img = await loadImg(p.url);
     let w = img.naturalWidth, h = img.naturalHeight;
-    const s = Math.min(1, MAX_SIDE / Math.max(w, h));
+    // Texts to email are size-capped by the carrier, so Messages photos are smaller with a bigger caption.
+    const side = viaMsg() ? 1280 : MAX_SIDE;
+    const s = Math.min(1, side / Math.max(w, h));
     w = Math.round(w * s); h = Math.round(h * s);
-    const fs = Math.max(20, Math.round(w / 38)), pad = Math.round(fs * 0.6);
+    const fs = Math.max(viaMsg() ? 26 : 20, Math.round(w / (viaMsg() ? 30 : 38))), pad = Math.round(fs * 0.6);
     const c = document.createElement("canvas"), ctx = c.getContext("2d");
     ctx.font = `bold ${fs}px system-ui, sans-serif`;
     const lines = wrap(ctx, cap, w - pad * 2);
@@ -483,13 +496,45 @@
     ctx.fillStyle = "#111"; ctx.fillRect(0, h, w, barH);
     ctx.fillStyle = "#fff"; ctx.font = `bold ${fs}px system-ui, sans-serif`; ctx.textBaseline = "top";
     lines.forEach((ln, i) => ctx.fillText(ln, pad, h + pad + i * fs * 1.3));
-    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", JPEG_Q));
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", viaMsg() ? 0.72 : JPEG_Q));
+    return new File([blob], name, { type: "image/jpeg" });
+  }
+  // Messages only: a first "summary" picture with the details in big type, so nobody has to open text_0.txt.
+  async function summaryCard(name) {
+    const W = 1080, pad = 56, c = document.createElement("canvas"), ctx = c.getContext("2d");
+    const rows = [
+      ["LOAD", loadNo() ? "L#" + loadNo() : "—"],
+      ["DRUM", drumNo() || (drumNA ? "N/A" : "—")],
+      ["ISSUE", issueList()]
+    ];
+    if (val("note")) rows.push(["NOTE", val("note")]);
+    rows.push(["TAKEN", stamp()]);
+    const lab = 30, big = 56, gap = 26;
+    const lay = rows.map(([k, v]) => { ctx.font = `800 ${big}px system-ui, sans-serif`; return [k, wrap(ctx, String(v), W - pad * 2)]; });
+    const headH = 150, footH = 90;
+    const H = headH + pad + lay.reduce((t, [, ls]) => t + lab + 10 + ls.length * big * 1.15 + gap, 0) + footH;
+    c.width = W; c.height = Math.round(H);
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#1f3a5f"; ctx.fillRect(0, 0, W, headH);
+    ctx.fillStyle = "#fff"; ctx.textBaseline = "middle"; ctx.font = `900 72px system-ui, sans-serif`; ctx.fillText("DRUM PHOTO", pad, headH / 2);
+    let y = headH + pad; ctx.textBaseline = "top";
+    for (const [k, ls] of lay) {
+      ctx.fillStyle = "#5b6573"; ctx.font = `800 ${lab}px system-ui, sans-serif`; ctx.fillText(k, pad, y); y += lab + 10;
+      ctx.fillStyle = "#111"; ctx.font = `800 ${big}px system-ui, sans-serif`;
+      for (const ln of ls) { ctx.fillText(ln, pad, y); y += big * 1.15; }
+      y += gap;
+    }
+    ctx.fillStyle = "#eef1f5"; ctx.fillRect(0, H - footH, W, footH);
+    ctx.fillStyle = "#5b6573"; ctx.textBaseline = "middle"; ctx.font = `700 32px system-ui, sans-serif`;
+    ctx.fillText(`${photos.length} photo${photos.length > 1 ? "s" : ""} follow`, pad, H - footH / 2);
+    const blob = await new Promise(r => c.toBlob(r, "image/jpeg", 0.8));
     return new File([blob], name, { type: "image/jpeg" });
   }
   async function build() {
     const v = ver, cap = caption(), base = fileBase();
     try {
       const files = []; let n = 1;
+      if (viaMsg()) files.push(await summaryCard(`${base}_summary.jpg`));
       for (const p of photos) {
         const name = p.label ? `${base}_label.jpg` : `${base}_${n++}.jpg`;
         files.push(await processImage(p, cap, name));
@@ -503,6 +548,10 @@
   // ---------- send ----------
   const officeKey = () => { const k = load("dp_office", ""); return OFFICES[k] ? k : ""; };
   const office = () => officeKey() ? OFFICES[officeKey()].email : "";
+  // How this phone sends: "outlook" (email app) or "messages" (text to the office email address).
+  const sendWith = () => load("dp_send", "outlook") === "messages" ? "messages" : "outlook";
+  const viaMsg = () => sendWith() === "messages";
+  const sendLabel = () => viaMsg() ? "Send by Messages ✉" : "Send to Office ✉";
 
   // Copy the office address on the same tap so it can be pasted into "To" if the mail app leaves it blank.
   $("send").addEventListener("pointerdown", () => {
@@ -532,7 +581,12 @@
     }
   });
 
-  function showDone() { $("doneAddr").textContent = office(); $("done").showModal(); }
+  function showDone() {
+    $("doneAddr").textContent = office();
+    $("doneTip").hidden = !viaMsg();
+    $("doneTip").textContent = "Tip: save " + office() + " as a contact named \u201cReceiving Office\u201d \u2014 then in Messages just type \u201cRec\u201d in To.";
+    $("done").showModal();
+  }
   function clearDrum() {
     photos.forEach(p => URL.revokeObjectURL(p.url)); photos = [];
     skipLabel = false; drumAuto = false; scanSeq++;
@@ -594,16 +648,31 @@
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   }
 
-  // ---------- office picker ----------
-  function showOffice() { $("officeName").textContent = officeKey() ? OFFICES[officeKey()].name + " office" : "— pick an office"; }
-  Object.keys(OFFICES).forEach(k => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "btn"; b.textContent = OFFICES[k].name;
-    b.onclick = () => { save("dp_office", k); showOffice(); $("officePick").close(); };
-    $("officeBtns").appendChild(b);
-  });
+  // ---------- phone setup: office + send method ----------
+  const SENDS = { outlook: "Outlook", messages: "Messages" };
+  function showOffice() {
+    $("officeName").textContent = officeKey() ? OFFICES[officeKey()].name + " office" : "— pick an office";
+    $("sendName").textContent = SENDS[sendWith()];
+    document.querySelectorAll("#officeBtns button").forEach(b => b.classList.toggle("on", b.dataset.k === officeKey()));
+    document.querySelectorAll("#sendBtns button").forEach(b => b.classList.toggle("on", b.dataset.k === sendWith()));
+    $("sendTip").textContent = viaMsg()
+      ? "Messages: after Send, pick Messages and put the office address in To. A summary picture is added first so the office sees the details without opening the text file."
+      : "Outlook: after Send, pick Outlook and paste the office address in To.";
+    $("setupDone").disabled = !officeKey();
+  }
+  function seg(box, list, key, after) {
+    Object.keys(list).forEach(k => {
+      const b = document.createElement("button");
+      b.type = "button"; b.dataset.k = k; b.textContent = list[k].name || list[k];
+      b.onclick = () => { save(key, k); showOffice(); after && after(); };
+      $(box).appendChild(b);
+    });
+  }
+  seg("officeBtns", OFFICES, "dp_office");
+  seg("sendBtns", SENDS, "dp_send", () => { changed(); });
+  $("setupDone").onclick = () => { if (officeKey()) $("officePick").close(); };
   $("officePick").addEventListener("cancel", e => { if (!officeKey()) e.preventDefault(); });
-  $("officeChange").onclick = () => $("officePick").showModal();
+  $("officeChange").onclick = () => { showOffice(); $("officePick").showModal(); };
 
   renderPhotos(); updateSend(); showOffice();
   if (!officeKey()) $("officePick").showModal();
