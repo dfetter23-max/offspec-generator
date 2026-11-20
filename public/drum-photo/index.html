@@ -289,7 +289,16 @@
   ISSUES.forEach(txt => {
     const b = document.createElement("button");
     b.type = "button"; b.className = txt === "OTHER" ? "chip wide" : "chip"; b.textContent = txt;
-    b.onclick = () => { picked.has(txt) ? picked.delete(txt) : picked.add(txt); b.classList.toggle("on"); changed(); };
+    b.onclick = () => {
+      picked.has(txt) ? picked.delete(txt) : picked.add(txt); b.classList.toggle("on"); changed();
+      // Picking OTHER jumps straight to the note (it's required for OTHER).
+      // Focus must happen right in the tap so the iPhone keyboard opens.
+      if (txt === "OTHER" && picked.has("OTHER")) {
+        const n = $("note");
+        n.focus();
+        n.scrollIntoView({ block: "center", behavior: "smooth" });
+      }
+    };
     $("issues").appendChild(b);
   });
 
